@@ -1,0 +1,12 @@
+AGENTS.md
+CLAUDE.md
+IMPLEMENTATION-ADAPTATION.md
+_probe_*.py
+_test_probe.py
+artifacts/
+evidence/
+node_modules/
+frontend/dist/
+frontend/.env*
+__pycache__/
+.pytest_cache/
