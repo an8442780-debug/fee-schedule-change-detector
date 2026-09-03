@@ -98,6 +98,40 @@ def test_invalid_precision_is_unresolved_without_assessment_mutation(direct_vm):
     assert case["evidence_digest"] == ""
 
 
+def test_oversized_response_is_unresolved_without_assessment_mutation(direct_vm):
+    oversized = rows()
+    oversized["padding"] = "x" * (64 * 1024)
+    contract = create_frozen(direct_vm, rows(), oversized)
+    assert contract.assess("case-1") == "UNRESOLVED"
+    case = json.loads(contract.get_case("case-1"))
+    assert case["state"] == "FROZEN"
+    assert case["evidence_digest"] == ""
+
+
+def test_oversized_code_is_unresolved_without_assessment_mutation(direct_vm):
+    oversized = rows()
+    oversized["rows"][0]["code"] = "C" * 65
+    contract = create_frozen(direct_vm, rows(), oversized)
+    assert contract.assess("case-1") == "UNRESOLVED"
+    assert json.loads(contract.get_case("case-1"))["state"] == "FROZEN"
+
+
+def test_oversized_unit_is_unresolved_without_assessment_mutation(direct_vm):
+    oversized = rows()
+    oversized["rows"][0]["unit"] = "u" * 33
+    contract = create_frozen(direct_vm, rows(), oversized)
+    assert contract.assess("case-1") == "UNRESOLVED"
+    assert json.loads(contract.get_case("case-1"))["state"] == "FROZEN"
+
+
+def test_oversized_date_is_unresolved_without_assessment_mutation(direct_vm):
+    oversized = rows()
+    oversized["rows"][0]["effective_date"] = "2026-01-01 "
+    contract = create_frozen(direct_vm, rows(), oversized)
+    assert contract.assess("case-1") == "UNRESOLVED"
+    assert json.loads(contract.get_case("case-1"))["state"] == "FROZEN"
+
+
 def test_upstream_rate_limit_is_unresolved_without_assessment_mutation(direct_vm):
     contract = deploy_contract(CONTRACT, direct_vm)
     contract.create_case("case-1", URL_A, URL_B, "USD", 2)

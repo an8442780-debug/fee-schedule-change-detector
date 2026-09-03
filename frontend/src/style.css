@@ -33,6 +33,11 @@ input:focus-visible { border-color: #b5e06c; box-shadow: 0 0 0 3px #b5e06c33; }
 .button-quiet { background: transparent; border: 1px solid #364134; color: #afbaa9; }
 .action-grid { display: grid; gap: 9px; grid-template-columns: 1fr 1fr; margin-top: 25px; }
 .result-panel { border-top: 1px solid #2d382c; margin-top: 28px; min-height: 120px; padding-top: 22px; }
+.transaction-details { border-top: 1px solid #2d382c; margin-top: 22px; padding-top: 16px; }
+.transaction-details p { margin-bottom: 7px; }
+.transaction-hash { color: #e5ece0; display: block; font-size: .72rem; }
+.transaction-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.transaction-actions a { text-decoration: none; }
 .muted { color: #9aa798; font-size: .84rem; line-height: 1.55; }
 .result-top, .pending { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
 .outcome { display: inline-block; }

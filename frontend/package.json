@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test tests/wallets-core.test.js"
+    "test": "node --test tests/wallets-core.test.js tests/case-state.test.js tests/transactions.test.js"
   },
   "dependencies": {
     "genlayer-js": "^1.1.8"

@@ -11,6 +11,11 @@ from genlayer import *
 
 MAX_AMOUNT = (2**128) - 1
 MAX_ROWS = 128
+MAX_RESPONSE_BYTES = 64 * 1024
+MAX_CODE_LENGTH = 64
+MAX_UNIT_LENGTH = 32
+MAX_DATE_LENGTH = 10
+MAX_CURRENCY_CODE_LENGTH = 3
 MAX_RETRIES = 3
 MAX_SCALE = 6
 CURRENCY_SCALES = {
@@ -65,7 +70,7 @@ def _normalise_currency(value) -> str | None:
     if not isinstance(value, str):
         return None
     value = value.strip().upper()
-    return value if value in CURRENCY_SCALES else None
+    return value if len(value) == MAX_CURRENCY_CODE_LENGTH and value in CURRENCY_SCALES else None
 
 
 def _parse_scaled_amount(value, scale: int) -> int | None:
@@ -87,8 +92,13 @@ def _parse_scaled_amount(value, scale: int) -> int | None:
 def _normalise_date(value) -> str | None:
     if not isinstance(value, str):
         return None
+    if len(value) > MAX_DATE_LENGTH:
+        return None
+    value = value.strip()
+    if len(value) != MAX_DATE_LENGTH:
+        return None
     try:
-        parsed = datetime.date.fromisoformat(value.strip())
+        parsed = datetime.date.fromisoformat(value)
     except ValueError:
         return None
     return parsed.isoformat()
@@ -97,6 +107,8 @@ def _normalise_date(value) -> str | None:
 def _normalise_snapshot(response) -> dict:
     if response.status != 200 or response.body is None:
         return {"ok": False, "reason": "UPSTREAM_UNAVAILABLE"}
+    if not isinstance(response.body, (bytes, bytearray)) or len(response.body) > MAX_RESPONSE_BYTES:
+        return {"ok": False, "reason": "INVALID_SOURCE"}
     try:
         payload = json.loads(response.body.decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
@@ -114,7 +126,12 @@ def _normalise_snapshot(response) -> dict:
         code = raw_row.get("code")
         unit = raw_row.get("unit")
         row_currency = _normalise_currency(raw_row.get("currency", source_currency))
-        if not isinstance(code, str) or not isinstance(unit, str):
+        if (
+            not isinstance(code, str)
+            or not isinstance(unit, str)
+            or len(code) > MAX_CODE_LENGTH
+            or len(unit) > MAX_UNIT_LENGTH
+        ):
             return {"ok": False, "reason": "INVALID_SOURCE"}
         code = code.strip().upper()
         unit = unit.strip().lower()
