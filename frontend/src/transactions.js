@@ -42,7 +42,7 @@ async function waitForFinality(client, hash, onUpdate) {
 function assertSuccessfulTransaction(transaction) {
   const status = String(transaction?.statusName ?? transaction?.status ?? "").toUpperCase();
   if (status !== TransactionStatus.FINALIZED) throw new Error("The transaction did not reach FINALIZED.");
-  const consensus = String(transaction?.resultName ?? "").toUpperCase();
+  const consensus = String(transaction?.resultName ?? transaction?.result_name ?? "").toUpperCase();
   if (consensus !== TransactionResult.MAJORITY_AGREE) throw new Error("Consensus failed: " + (consensus || "UNKNOWN") + ".");
   const execution = executionName(transaction);
   if (execution !== ExecutionResult.FINISHED_WITH_RETURN) throw new Error("Contract execution failed: " + (execution || "UNKNOWN") + ".");

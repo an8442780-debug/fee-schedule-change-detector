@@ -38,6 +38,23 @@ test("write success requires finalized agreement, execution success and readback
   assert.equal(readPending(), null);
 });
 
+test("write success accepts the SDK runtime result_name field", async () => {
+  const result = await executeWrite({
+    client: clientWith({
+      statusName: "FINALIZED",
+      result_name: "MAJORITY_AGREE",
+      consensus_data: { leader_receipt: [{ mode: "leader", execution_result: "SUCCESS", result: { status: "return" } }] },
+    }),
+    contractAddress: CONTRACT,
+    functionName: "create_case",
+    args: ["case-runtime-field"],
+    readback: async () => true,
+    onUpdate: () => {},
+  });
+  assert.equal(result.hash, HASH);
+  assert.equal(readPending(), null);
+});
+
 test("a pending journal blocks a second submission", async () => {
   storage.set("fee-schedule-change-detector:pending-write", JSON.stringify({
     contractAddress: CONTRACT,
