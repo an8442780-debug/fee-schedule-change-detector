@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createProviderRegistry, formatWalletError, supportedWallets } from "../src/wallets-core.js";
+import {
+  chainSwitchParams,
+  createProviderRegistry,
+  ensureProviderOnChain,
+  formatWalletError,
+  supportedWallets,
+} from "../src/wallets-core.js";
 
 const provider = { request() {} };
 
@@ -42,4 +48,62 @@ test("supported wallet placeholders keep the complete canonical set", () => {
 test("wallet errors expose a useful message instead of object coercion", () => {
   assert.equal(formatWalletError({ message: "User rejected the request." }), "User rejected the request.");
   assert.notEqual(formatWalletError({ code: 4001 }), "[object Object]");
+});
+
+const studioChain = {
+  id: 61999,
+  name: "GenLayer Studio Network",
+  rpcUrls: { default: { http: ["https://studio.genlayer.com/api"] } },
+  nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 },
+  blockExplorers: { default: { url: "https://genlayer-explorer.vercel.app" } },
+};
+
+test("selected EIP-6963 provider switches directly without a MetaMask global", async () => {
+  let currentChain = "0x1";
+  const calls = [];
+  const provider = {
+    async request(request) {
+      calls.push(request);
+      if (request.method === "eth_chainId") return currentChain;
+      if (request.method === "wallet_switchEthereumChain") {
+        currentChain = request.params[0].chainId;
+        return null;
+      }
+      throw new Error(`Unexpected method ${request.method}`);
+    },
+  };
+
+  await ensureProviderOnChain(provider, studioChain);
+  assert.deepEqual(calls.map(({ method }) => method), ["eth_chainId", "wallet_switchEthereumChain", "eth_chainId"]);
+  assert.deepEqual(calls[1].params, [{ chainId: "0xf22f" }]);
+});
+
+test("unknown chain is added and switched on the selected provider", async () => {
+  let currentChain = "0x1";
+  let switchAttempts = 0;
+  const calls = [];
+  const provider = {
+    async request(request) {
+      calls.push(request);
+      if (request.method === "eth_chainId") return currentChain;
+      if (request.method === "wallet_switchEthereumChain") {
+        switchAttempts += 1;
+        if (switchAttempts === 1) throw { code: 4902, message: "Unrecognized chain" };
+        currentChain = request.params[0].chainId;
+        return null;
+      }
+      if (request.method === "wallet_addEthereumChain") return null;
+      throw new Error(`Unexpected method ${request.method}`);
+    },
+  };
+
+  await ensureProviderOnChain(provider, studioChain);
+  assert.deepEqual(calls.map(({ method }) => method), [
+    "eth_chainId",
+    "wallet_switchEthereumChain",
+    "wallet_addEthereumChain",
+    "wallet_switchEthereumChain",
+    "eth_chainId",
+  ]);
+  assert.deepEqual(calls[2].params, [chainSwitchParams(studioChain)]);
 });

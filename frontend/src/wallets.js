@@ -1,14 +1,9 @@
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { createProviderRegistry } from "./wallets-core.js";
+import { chainIdNumber, createProviderRegistry, ensureProviderOnChain } from "./wallets-core.js";
 
 const registry = createProviderRegistry();
 const listeners = new Set();
-
-function chainIdNumber(value) {
-  if (typeof value === "string") return value.toLowerCase().startsWith("0x") ? Number.parseInt(value, 16) : Number(value);
-  return Number(value);
-}
 
 function notify() {
   for (const listener of listeners) listener(registry.list());
@@ -52,8 +47,8 @@ export async function connectWallet(option, onInvalidated = () => {}) {
   const accounts = await option.provider.request({ method: "eth_requestAccounts" });
   if (!Array.isArray(accounts) || typeof accounts[0] !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(accounts[0])) throw new Error("The wallet returned no valid account.");
   const account = accounts[0];
+  await ensureProviderOnChain(option.provider, studionet);
   const client = createClient({ chain: studionet, account, provider: option.provider });
-  await client.connect("studionet");
   const onAccountsChanged = (nextAccounts) => {
     const active = Array.isArray(nextAccounts) ? String(nextAccounts[0] ?? "") : "";
     if (active.toLowerCase() !== account.toLowerCase()) onInvalidated("Wallet account changed. Reconnect before writing.", option.provider);
