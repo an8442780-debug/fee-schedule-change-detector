@@ -5,6 +5,7 @@ import {
   createProviderRegistry,
   ensureProviderOnChain,
   formatWalletError,
+  legacyWalletRdns,
   supportedWallets,
   walletDisplayState,
 } from "../src/wallets-core.js";
@@ -58,6 +59,14 @@ test("rejects unknown, malformed, conflicting, and provider-null announcements",
   assert.equal(registry.upsertAnnouncement(announcement("one", "io.rabby", callable())), false);
   assert.equal(registry.upsertAnnouncement(announcement("two", "io.metamask", provider)), false);
   assert.equal(registry.list().length, 1);
+});
+
+test("does not mistake a compatibility isMetaMask flag for an installed MetaMask wallet", () => {
+  assert.equal(legacyWalletRdns({ request() {}, isMetaMask: true }), "");
+  assert.equal(legacyWalletRdns({ request() {}, isMetaMask: true, isOkxWallet: true }), "");
+  assert.equal(legacyWalletRdns({ request() {}, isMetaMask: true, _metamask: { isUnlocked() {} } }), "io.metamask");
+  assert.equal(legacyWalletRdns({ request() {}, isRabby: true }), "io.rabby");
+  assert.equal(legacyWalletRdns({ request() {}, isOkxWallet: true }), "com.okex.wallet");
 });
 
 test("supported metadata is canonical and not a detected-wallet render list", () => {

@@ -54,8 +54,8 @@ test("public page keeps IDs unique and local anchors resolvable", () => {
 
 test("wallet chooser renders only discovered providers and uses a real empty state", () => {
   assert.match(appSource, /walletDisplayState\(options\)/);
-  assert.match(appSource, /getWalletsSnapshot\(\)/);
   assert.match(appSource, /startsWith\("\/wallets\/"\)/);
+  assert.match(appSource, /getWalletsSnapshot\(\)/);
   assert.match(appSource, /renderWallets\(getWalletsSnapshot\(\)\);\s*dialog\.showModal\(\)/);
   assert.doesNotMatch(appSource.slice(appSource.indexOf('$("connect-wallet").addEventListener'), appSource.indexOf('$("close-wallet")')), /eth_requestAccounts/);
   assert.doesNotMatch(appSource, /WALLET_ICON_MARKUP|innerHTML|provider: null|unavailable-|Not detected in this browser/);

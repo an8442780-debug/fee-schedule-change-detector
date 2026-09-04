@@ -1,6 +1,6 @@
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { chainIdNumber, createProviderRegistry, ensureProviderOnChain } from "./wallets-core.js";
+import { chainIdNumber, createProviderRegistry, ensureProviderOnChain, legacyWalletRdns } from "./wallets-core.js";
 
 const registry = createProviderRegistry();
 const listeners = new Set();
@@ -9,16 +9,6 @@ let discoveryStarted = false;
 function notify() {
   const options = registry.list();
   for (const listener of listeners) listener(options);
-}
-
-function legacyWallet(provider) {
-  if (!provider || typeof provider.request !== "function") return "";
-  const matches = [
-    [provider.isMetaMask === true && provider.isRabby !== true, "io.metamask"],
-    [provider.isOkxWallet === true || provider.isOKExWallet === true, "com.okex.wallet"],
-    [provider.isRabby === true, "io.rabby"],
-  ].filter(([match]) => match).map(([, rdns]) => rdns);
-  return matches.length === 1 ? matches[0] : "";
 }
 
 function legacyCandidates() {
@@ -35,7 +25,7 @@ function legacyCandidates() {
 function collectLegacy() {
   let changed = false;
   for (const provider of legacyCandidates()) {
-    const rdns = legacyWallet(provider);
+    const rdns = legacyWalletRdns(provider);
     if (rdns) changed = registry.addLegacy(provider, rdns) || changed;
   }
   if (changed) notify();

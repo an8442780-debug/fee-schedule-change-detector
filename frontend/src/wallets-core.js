@@ -10,6 +10,18 @@ function validProvider(provider) {
   return provider && typeof provider.request === "function";
 }
 
+export function legacyWalletRdns(provider) {
+  if (!validProvider(provider)) return "";
+  const compatibilityMetaMaskFlag = provider.isMetaMask === true && typeof provider._metamask?.isUnlocked !== "function";
+  if (compatibilityMetaMaskFlag) return "";
+  const matches = [
+    [provider.isMetaMask === true && provider.isRabby !== true, "io.metamask"],
+    [provider.isOkxWallet === true || provider.isOKExWallet === true, "com.okex.wallet"],
+    [provider.isRabby === true, "io.rabby"],
+  ].filter(([match]) => match).map(([, rdns]) => rdns);
+  return matches.length === 1 ? matches[0] : "";
+}
+
 function walletForRdns(rdns) {
   return typeof rdns === "string" ? BY_RDNS.get(rdns.trim().toLowerCase()) : undefined;
 }
