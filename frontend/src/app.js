@@ -12,7 +12,6 @@ import {
   formatScaledAmount,
   rowCounts,
 } from "./case-state.js";
-import { supportedWallets } from "./wallets-core.js";
 import "./style.css";
 
 const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS?.trim() ?? "";
@@ -126,14 +125,23 @@ function appendFact(list, label, value, className = "") {
 
 function renderWallets(options) {
   walletOptions.replaceChildren();
-  const displayOptions = options.length
-    ? options
-    : supportedWallets().map(({ rdns, label }) => ({ uuid: `unavailable-${rdns}`, provider: null, rdns, label, icon: "", unavailable: true }));
+  const displayOptions = options.filter((option) => option?.provider && typeof option.provider.request === "function");
+  if (!displayOptions.length) {
+    const empty = document.createElement("div");
+    empty.className = "wallet-empty";
+    const heading = document.createElement("strong");
+    heading.textContent = "No supported wallet detected";
+    const message = document.createElement("p");
+    message.textContent = "Install or enable a supported browser wallet, then reload this page.";
+    empty.append(heading, message);
+    walletOptions.append(empty);
+    return;
+  }
   for (const option of displayOptions) {
     const button = document.createElement("button");
-    button.className = `wallet-option${option.unavailable ? " wallet-option--unavailable" : ""}`;
+    button.className = "wallet-option";
     button.type = "button";
-    button.setAttribute("aria-label", option.unavailable ? `${option.label}, not detected` : `Connect with ${option.label}`);
+    button.setAttribute("aria-label", `Connect with ${option.label}`);
     const icon = document.createElement("span");
     icon.className = "wallet-icon";
     const iconUrl = typeof option.icon === "string" ? option.icon.trim() : "";
@@ -151,16 +159,11 @@ function renderWallets(options) {
     const label = document.createElement("strong");
     label.textContent = option.label;
     const kind = document.createElement("small");
-    kind.textContent = option.unavailable ? "Not detected in this browser" : "Ready to connect";
+    kind.textContent = "Ready to connect";
     details.append(label, kind);
     button.append(icon, details);
     button.addEventListener("click", async () => {
       walletError.hidden = true;
-      if (!option.provider) {
-        walletError.textContent = `${option.label} is not available in this browser. Install or enable ${option.label}, then reload.`;
-        walletError.hidden = false;
-        return;
-      }
       try {
         const previous = session;
         session = await connectWallet(option, invalidateSession);

@@ -1691,6 +1691,27 @@ input[data-state="success"] {
   gap: var(--space-xs);
 }
 
+.wallet-empty {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-sm);
+  border: 1px dashed var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-paper-2);
+}
+
+.wallet-empty strong {
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+}
+
+.wallet-empty p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
 .wallet-option {
   display: flex;
   align-items: center;

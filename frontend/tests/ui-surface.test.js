@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 
 test("command palette lives outside the inert page shell", () => {
   const shellEnd = html.indexOf("\n    </div>\n\n    <!-- Wallet Dialog -->");
@@ -49,4 +50,10 @@ test("public page keeps IDs unique and local anchors resolvable", () => {
   for (const anchor of anchors) {
     assert.ok(ids.includes(anchor), `missing local anchor target: ${anchor}`);
   }
+});
+
+test("wallet chooser renders only discovered providers and uses a real empty state", () => {
+  assert.match(appSource, /option\?\.provider && typeof option\.provider\.request === "function"/);
+  assert.match(appSource, /No supported wallet detected/);
+  assert.doesNotMatch(appSource, /provider: null|unavailable-|Not detected in this browser/);
 });
