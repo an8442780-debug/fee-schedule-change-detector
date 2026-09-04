@@ -175,7 +175,7 @@
                       <span class="stage-badge stage-badge--sub">3.0</span>
                       <div class="stage-subcard__meta">
                         <h4 class="stage-subheading">Assess consensus</h4>
-                        <p class="stage-subcopy">Validators independently normalize rows, scale amounts to u256, and detect changes. Unresolved outcomes fail closed.</p>
+                        <p class="stage-subcopy">Validators independently normalize rows, scale amounts to a shared integer representation, and detect changes. Unresolved outcomes fail closed.</p>
                       </div>
                     </div>
                     <div class="stage-subcard__action-group">
@@ -190,7 +190,7 @@
                       <span class="stage-badge stage-badge--graphite">4.0</span>
                       <div class="stage-subcard__meta">
                         <h4 class="stage-subheading stage-subheading--graphite">Authoritative readback</h4>
-                        <p class="stage-subcopy stage-subcopy--graphite">Direct get_case call bound to TransactionHashVariant.LATEST_FINAL.</p>
+                        <p class="stage-subcopy stage-subcopy--graphite">The app reads the verified final record after consensus has settled.</p>
                       </div>
                       <div class="stage-subcard__read-action">
                         <button class="button button-quiet" data-action="read" type="button">Read case</button>
@@ -213,19 +213,19 @@
           <div class="section-lead">
             <p class="eyebrow">Architecture · Equivalence Principle</p>
             <h2 class="section-title" id="verification-title">Consensus-driven row derivation across independent validators</h2>
-            <p class="section-desc">Traditional oracles rely on trusted relays or single-reporter signatures. GenLayer executes nondeterministic web fetches directly within the smart contract execution environment, requiring independent re-derivation across validator nodes.</p>
+            <p class="section-desc">Traditional oracles rely on trusted relays or single-reporter signatures. GenLayer evaluates public web evidence within contract execution and requires independent validator re-checks before a result can settle.</p>
           </div>
 
           <div class="features-grid three-col">
             <div class="feature-card">
               <div class="feature-icon" aria-hidden="true">01</div>
               <h3 class="feature-title">Leader normalization</h3>
-              <p class="feature-text">The proposing leader fetches both HTTPS endpoints using <code>gl.nondet.web.get()</code>. Responses (capped at 64 KB) are parsed, validated, and normalized into canonical key-value structures where service codes are uppercase and billing units are lowercase.</p>
+              <p class="feature-text">The proposing leader gathers both HTTPS schedules. Responses (capped at 64 KB) are parsed, validated, and normalized into canonical records where service codes are uppercase and billing units are lowercase.</p>
             </div>
             <div class="feature-card">
               <div class="feature-icon" aria-hidden="true">02</div>
               <h3 class="feature-title">Independent re-derivation</h3>
-              <p class="feature-text">Validators do not simply vote on the leader’s output. Under GenLayer’s Equivalence Principle (<code>gl.vm.run_nondet_unsafe</code>), each validator independently re-fetches both URLs, executes the exact same normalization logic, and verifies the derivation.</p>
+              <p class="feature-text">Validators do not simply vote on the leader’s output. Under GenLayer’s Equivalence Principle, each validator independently re-checks both URLs, repeats the same normalization logic, and verifies the derivation.</p>
             </div>
             <div class="feature-card">
               <div class="feature-icon" aria-hidden="true">03</div>
@@ -253,7 +253,7 @@
                     <tr>
                       <td><code>PENDING</code></td>
                       <td>Mempool submission</td>
-                      <td>Transaction received by Studionet RPC node; pending recovery journal logs hash.</td>
+                      <td>Transaction received by the Studionet network; pending recovery journal keeps the hash available.</td>
                     </tr>
                     <tr>
                       <td><code>PROPOSING</code></td>
@@ -416,7 +416,7 @@
         <section class="doc-section" id="numeric-policy" aria-labelledby="numeric-title">
           <div class="section-lead">
             <p class="eyebrow">Data Integrity · Numeric Safety</p>
-            <h2 class="section-title" id="numeric-title">Strict string-to-u256 scaling and zero floating-point arithmetic</h2>
+            <h2 class="section-title" id="numeric-title">Strict decimal-string scaling and zero floating-point arithmetic</h2>
             <p class="section-desc">Smart contract execution across decentralized nodes requires complete bit-level determinism. Floating-point arithmetic introduces IEEE-754 rounding differences across CPU architectures and is strictly banned.</p>
           </div>
 
@@ -427,7 +427,7 @@
                 <li>Endpoints must use the <code>https://</code> scheme; plaintext HTTP is rejected.</li>
                 <li>URL strings are limited to 256 characters; endpoints must be distinct.</li>
                 <li>Snapshot A and Snapshot B URLs must be strictly distinct.</li>
-                <li>Response bodies are bounded at 64 KB (<code>MAX_RESPONSE_BYTES = 65536</code>).</li>
+                <li>Response bodies are bounded at 64 KB (65,536 bytes).</li>
               </ul>
             </div>
 
@@ -435,10 +435,10 @@
               <h3 class="policy-heading">Canonical row identity</h3>
               <ul class="policy-list">
                 <li>Composite primary key: <code>service_code|unit</code>.</li>
-                <li>Service codes normalized to uppercase, trimmed (<code>MAX_CODE_LENGTH = 64</code>).</li>
-                <li>Billing units normalized to lowercase, trimmed (<code>MAX_UNIT_LENGTH = 32</code>).</li>
+                <li>Service codes are normalized to uppercase and trimmed to 64 characters.</li>
+                <li>Billing units are normalized to lowercase and trimmed to 32 characters.</li>
                 <li>The delimiter character <code>|</code> is rejected inside code or unit fields.</li>
-                <li>Max 128 rows per fee schedule snapshot (<code>MAX_ROWS = 128</code>).</li>
+                <li>Each fee schedule snapshot supports up to 128 rows.</li>
               </ul>
             </div>
 
@@ -446,17 +446,17 @@
               <h3 class="policy-heading">Currency & decimal scale</h3>
               <ul class="policy-list">
                 <li>Accepts the explicit supported currency set: USD, EUR, GBP, CAD, AUD, CHF, CNY, INR (scale 2) and JPY, KRW (scale 0).</li>
-                <li><code>create_case</code> requires the supplied scale to match the supported currency scale (up to <code>MAX_SCALE = 6</code>).</li>
+                <li>The case form requires the supplied scale to match the supported currency scale (up to 6 decimal places).</li>
                 <li>Arbitrary or unmapped ISO-4217 currency codes are rejected.</li>
               </ul>
             </div>
 
             <div class="policy-card">
-              <h3 class="policy-heading">String-to-scaled-integer (u256)</h3>
+              <h3 class="policy-heading">String-to-scaled-integer amounts</h3>
               <ul class="policy-list">
                 <li>Amounts in JSON are parsed directly from string to integer scaled by <code>10^scale</code>.</li>
                 <li>E.g. <code>"12.50"</code> with scale 2 maps directly to integer <code>1250</code>.</li>
-                <li>Amount range bounded by <code>MAX_AMOUNT = (2^128) - 1</code>.</li>
+                <li>Amount range is bounded by the contract’s fixed maximum integer value.</li>
                 <li>Zero floating-point operations occur inside contract assessment.</li>
               </ul>
             </div>
@@ -509,7 +509,7 @@
             <div class="lifecycle-node">
               <span class="lifecycle-node__badge">2. FROZEN</span>
               <h3 class="lifecycle-node__title">Evidence locked</h3>
-              <p class="lifecycle-node__desc">Owner triggers <code>freeze_case()</code>. Source URLs are immutable. Ready for validator consensus assessment.</p>
+              <p class="lifecycle-node__desc">The case owner seals the evidence window. Source URLs are immutable. Ready for validator consensus assessment.</p>
             </div>
             <div class="lifecycle-arrow" aria-hidden="true">→</div>
             <div class="lifecycle-node">
@@ -521,8 +521,8 @@
 
           <div class="features-grid two-col">
             <div class="feature-card">
-              <h3 class="feature-title">Bounded retry path (MAX_RETRIES = 3)</h3>
-              <p class="feature-text">When an assessment results in <code>UNRESOLVED</code> (e.g. transient HTTP 503 or network partition), the case remains in <code>FROZEN</code> state rather than failing open. Callers can invoke <code>retry_unresolved()</code> up to 3 times (<code>MAX_RETRIES = 3</code>). Once retry count reaches 3, further attempts revert.</p>
+              <h3 class="feature-title">Bounded retry path (up to 3 attempts)</h3>
+              <p class="feature-text">When an assessment results in <code>UNRESOLVED</code> (e.g. transient HTTP 503 or network partition), the case remains in <code>FROZEN</code> state rather than failing open. Callers can retry the assessment up to 3 times. Once the retry count reaches 3, further attempts revert.</p>
             </div>
             <div class="feature-card">
               <h3 class="feature-title">Pending transaction recovery journal</h3>
@@ -533,8 +533,8 @@
               <p class="feature-text">The deployed contract contains zero proxy dispatchers, zero delegatecalls, and zero upgrade mechanisms. Its logic is permanent and unchangeable. Verification results are immutable records.</p>
             </div>
             <div class="feature-card">
-              <h3 class="feature-title">LATEST_FINAL authoritative readback</h3>
-              <p class="feature-text">All frontend state verification explicitly binds <code>get_case</code> calls to <code>TransactionHashVariant.LATEST_FINAL</code> via <code>genlayer-js</code>, ensuring the client never reads speculative or unfinalized validator state.</p>
+              <h3 class="feature-title">Verified final record</h3>
+              <p class="feature-text">Every displayed case result is read from the settled network state after the transaction reaches finality, so the client never presents speculative validator state as a result.</p>
             </div>
           </div>
         </section>
@@ -542,50 +542,50 @@
         <!-- Section 7: Method Reference -->
         <section class="doc-section" id="method-reference" aria-labelledby="methods-title">
           <div class="section-lead">
-            <p class="eyebrow">Interface Specification · GenLayer Python ABI</p>
-            <h2 class="section-title" id="methods-title">Intelligent contract method signatures and access controls</h2>
-            <p class="section-desc">Full interface specification for the 5 public and owner methods deployed on Studionet.</p>
+            <p class="eyebrow">Interface Specification · Public contract actions</p>
+            <h2 class="section-title" id="methods-title">Public actions and access controls</h2>
+            <p class="section-desc">The deployed contract exposes five clearly bounded actions: four writes and one view.</p>
           </div>
 
           <div class="methods-list">
             <article class="method-item">
               <div class="method-item__header">
-                <code class="method-item__sig mono">create_case(case_id: str, url_a: str, url_b: str, currency: str, scale: int)</code>
+                <span class="method-item__sig mono">Create a comparison case</span>
                 <span class="method-item__tag method-item__tag--public">Public Write</span>
               </div>
-              <p class="method-item__desc">Initializes a new comparison case in <code>DRAFT</code> state. Stores <code>gl.message.sender_address</code> as the case owner. Validates HTTPS schemes, limits URL lengths to 256 characters, verifies URL uniqueness, and requires the supplied scale to match the supported currency scale.</p>
+              <p class="method-item__desc">Starts a new comparison case in <code>DRAFT</code> state and records the creating wallet as its owner. Validates HTTPS schemes, limits URL lengths to 256 characters, verifies URL uniqueness, and requires the supplied scale to match the supported currency scale.</p>
             </article>
 
             <article class="method-item">
               <div class="method-item__header">
-                <code class="method-item__sig mono">freeze_case(case_id: str)</code>
+                <span class="method-item__sig mono">Seal the evidence window</span>
                 <span class="method-item__tag method-item__tag--owner">Owner Write</span>
               </div>
-              <p class="method-item__desc">Locks a case in <code>DRAFT</code> state and transitions it to <code>FROZEN</code>. Enforces <code>_require_owner</code> so only the case owner can seal the evidence window prior to assessment.</p>
+              <p class="method-item__desc">Locks a case in <code>DRAFT</code> state and transitions it to <code>FROZEN</code>. Only the case owner can seal the evidence window prior to assessment.</p>
             </article>
 
             <article class="method-item">
               <div class="method-item__header">
-                <code class="method-item__sig mono">assess(case_id: str)</code>
+                <span class="method-item__sig mono">Assess the two schedules</span>
                 <span class="method-item__tag method-item__tag--public">Public Write</span>
               </div>
-              <p class="method-item__desc">Public write method that triggers nondeterministic web fetching and independent validator re-derivation on a <code>FROZEN</code> case. Normalizes schedule rows, scales amounts to <code>u256</code>, analyzes differences according to precedence rules, and updates case outcome. If resolved, advances state to <code>ASSESSED</code>; if unresolved, remains <code>FROZEN</code>.</p>
+              <p class="method-item__desc">Public action that evaluates a <code>FROZEN</code> case using public web schedules and independent validator re-checks. Normalizes schedule rows, scales amounts to shared integers, analyzes differences according to precedence rules, and updates the case outcome. If resolved, advances state to <code>ASSESSED</code>; if unresolved, remains <code>FROZEN</code>.</p>
             </article>
 
             <article class="method-item">
               <div class="method-item__header">
-                <code class="method-item__sig mono">retry_unresolved(case_id: str)</code>
+                <span class="method-item__sig mono">Retry an unresolved case</span>
                 <span class="method-item__tag method-item__tag--public">Public Write</span>
               </div>
-              <p class="method-item__desc">Public write method to re-attempt assessment on any case in <code>FROZEN</code> state with outcome <code>UNRESOLVED</code>. Increments <code>retry_count</code> up to <code>MAX_RETRIES = 3</code>; reverts once retry limit is reached.</p>
+              <p class="method-item__desc">Public action to re-attempt assessment on any case in <code>FROZEN</code> state with outcome <code>UNRESOLVED</code>. Increments the retry count up to 3; reverts once the retry limit is reached.</p>
             </article>
 
             <article class="method-item">
               <div class="method-item__header">
-                <code class="method-item__sig mono">get_case(case_id: str) -> str</code>
+                <span class="method-item__sig mono">Read the verified case record</span>
                 <span class="method-item__tag method-item__tag--view">Public View</span>
               </div>
-              <p class="method-item__desc">Returns a serialized JSON representation of the complete case state, including owner, state, outcome, URLs, currency, scale, row counts, parsed rows, and evidence digests. Queried using <code>TransactionHashVariant.LATEST_FINAL</code>.</p>
+              <p class="method-item__desc">Returns the complete case record, including owner, state, outcome, URLs, currency, scale, row counts, parsed rows, and evidence digests. Read from the settled network state.</p>
             </article>
           </div>
         </section>
@@ -601,7 +601,7 @@
           <div class="features-grid three-col">
             <div class="feature-card">
               <h3 class="feature-title">Owner authorization on freeze</h3>
-              <p class="feature-text">Case creation records the sender as owner, and <code>freeze_case</code> strictly enforces <code>_require_owner</code> to seal the evidence window. Once frozen, consensus assessment and retry operations are publicly callable to avoid deadlocking verification.</p>
+              <p class="feature-text">Case creation records the creating wallet as owner, and the freeze action strictly enforces owner authorization to seal the evidence window. Once frozen, consensus assessment and retry operations are publicly callable to avoid deadlocking verification.</p>
             </div>
             <div class="feature-card">
               <h3 class="feature-title">Prompt & data boundary</h3>
@@ -613,15 +613,15 @@
             </div>
             <div class="feature-card">
               <h3 class="feature-title">Client preflight checks</h3>
-              <p class="feature-text">Before broadcasting transactions, the client verifies active wallet connection, ensures Studionet chain ID match, checks gas balance, and enforces a single active transaction lock.</p>
+              <p class="feature-text">Before broadcasting transactions, the client verifies the active wallet connection, ensures the selected network is Studionet, checks the available gas balance, and enforces a single active transaction lock.</p>
             </div>
             <div class="feature-card">
-              <h3 class="feature-title">Safe DOM text rendering</h3>
-              <p class="feature-text">Every dynamic case field, transaction hash, and error message is rendered strictly via <code>textContent</code> and programmatic DOM node insertion. Zero <code>innerHTML</code> injection exists in the codebase.</p>
+              <h3 class="feature-title">Safe result rendering</h3>
+              <p class="feature-text">Dynamic case fields, transaction hashes, and error messages are displayed as text-only values. Fetched source content is never treated as markup.</p>
             </div>
             <div class="feature-card">
               <h3 class="feature-title">Zero backend footprint</h3>
-              <p class="feature-text">The web application is a pure client-side static bundle. It makes no intermediate API calls, runs no custodial servers, and connects directly to the configured Studionet RPC endpoint.</p>
+              <p class="feature-text">The web application is a pure client-side static bundle. It uses no custodial server and connects directly to the configured Studionet network.</p>
             </div>
           </div>
         </section>
@@ -637,11 +637,11 @@
           <div class="support-grid">
             <div class="support-card">
               <h3 class="support-heading">Supported wallets</h3>
-              <p class="support-text">The interface supports browser wallets via EIP-6963 multi-provider discovery and standard window injection. Provider discovery examples include:</p>
+              <p class="support-text">Choose an available browser wallet from the connection dialog. The interface keeps account access, network status, and signing approval under the user’s control.</p>
               <ul class="support-list">
-                <li><strong>MetaMask:</strong> EIP-6963 provider announcement and chain switching.</li>
-                <li><strong>OKX Wallet:</strong> Injected provider discovery and transaction signing.</li>
-                <li><strong>Rabby:</strong> EIP-6963 provider announcement and transaction signing.</li>
+                <li><strong>Connection:</strong> The app starts disconnected and requests access only after you choose to connect.</li>
+                <li><strong>Network:</strong> The app checks that the selected wallet is using Studionet before a write.</li>
+                <li><strong>Approval:</strong> Every transaction remains pending until you review and approve it in your wallet.</li>
               </ul>
               <p class="field-hint">Provider availability and transaction signing depend on the installed browser wallet and user approval.</p>
             </div>
@@ -660,10 +660,6 @@
                 <li>
                   <span class="meta-label">Contract SHA-256:</span>
                   <span class="meta-val mono">8082AC55D11B62197E87652A4B3CA63C99D83201D33FAA6B1F8E43DDC62F75D1</span>
-                </li>
-                <li>
-                  <span class="meta-label">Studionet RPC:</span>
-                  <span class="meta-val mono">https://studio.genlayer.com/api</span>
                 </li>
               </ul>
             </div>
@@ -690,7 +686,7 @@ gltest tests/test_contract.py</code></pre>
             <div class="feature-card">
               <h3 class="feature-title">Operational boundaries & limitations</h3>
               <ul class="support-list">
-                <li><strong>Max Rows:</strong> Schedules support up to 128 rows (<code>MAX_ROWS = 128</code>).</li>
+                <li><strong>Max Rows:</strong> Schedules support up to 128 rows.</li>
                 <li><strong>Payload Bound:</strong> Upstream responses capped at 64 KB (<code>65536 bytes</code>).</li>
                 <li><strong>Public Endpoints:</strong> URLs must be publicly reachable without HTTP headers/cookies.</li>
                 <li><strong>Gas Currency:</strong> Transactions require Studionet testnet GEN from the faucet.</li>
@@ -710,11 +706,11 @@ gltest tests/test_contract.py</code></pre>
                 <span class="resource-pill__arrow" aria-hidden="true">↗</span>
               </a>
               <a class="resource-pill" href="https://docs.genlayer.com/developers/intelligent-contracts/features/web-access" target="_blank" rel="noreferrer">
-                <span>Nondeterministic Web Access</span>
+                <span>Public web evidence</span>
                 <span class="resource-pill__arrow" aria-hidden="true">↗</span>
               </a>
-              <a class="resource-pill" href="https://docs.genlayer.com/api-references/genlayer-js" target="_blank" rel="noreferrer">
-                <span>genlayer-js Client SDK</span>
+              <a class="resource-pill" href="https://docs.genlayer.com/developers/intelligent-contracts/testing" target="_blank" rel="noreferrer">
+                <span>Testing guidance</span>
                 <span class="resource-pill__arrow" aria-hidden="true">↗</span>
               </a>
             </div>
@@ -735,7 +731,7 @@ gltest tests/test_contract.py</code></pre>
             </div>
             <div>
               <dt>Numeric policy</dt>
-              <dd>String amounts → u256</dd>
+              <dd>String amounts → scaled integers</dd>
             </div>
             <div>
               <dt>Consensus</dt>
@@ -759,7 +755,7 @@ gltest tests/test_contract.py</code></pre>
             <span class="foot-line__sep" aria-hidden="true">·</span>
             <a class="foot-link" href="https://github.com/an8442780-debug/fee-schedule-change-detector/blob/master/docs/VERIFICATION.md" target="_blank" rel="noreferrer">Verification Docs</a>
             <span class="foot-line__sep" aria-hidden="true">·</span>
-            <span class="foot-line__mono">LATEST_FINAL Readback</span>
+            <span class="foot-line__mono">Verified final readback</span>
           </p>
         </div>
       </footer>
@@ -769,12 +765,12 @@ gltest tests/test_contract.py</code></pre>
     <dialog class="wallet-dialog" id="wallet-dialog" aria-labelledby="wallet-title">
       <div class="dialog-header">
         <div>
-          <p class="dialog-eyebrow">Provider selector</p>
+          <p class="dialog-eyebrow">Wallet connection</p>
           <h2 id="wallet-title">Connect a supported wallet</h2>
         </div>
         <button class="icon-button" id="close-wallet" type="button" aria-label="Close wallet chooser">×</button>
       </div>
-      <p class="dialog-description">Opening this chooser does not request accounts. Choose a detected provider to continue.</p>
+      <p class="dialog-description">Opening this chooser does not request accounts. Choose a wallet to continue.</p>
       <div class="wallet-options" id="wallet-options"></div>
       <p class="dialog-error" id="wallet-error" role="alert" hidden></p>
     </dialog>
@@ -782,8 +778,10 @@ gltest tests/test_contract.py</code></pre>
     <!-- Global Toast -->
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <!-- N13 Command/Jump Palette Modal -->
-    <div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Workflow stage and documentation navigator" aria-hidden="true" inert>
+    <!-- Modal overlays are siblings of app-shell so background inertness never reaches them. -->
+    <div class="overlay-root" id="overlay-root">
+      <!-- N13 Command/Jump Palette Modal -->
+      <div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Workflow stage and documentation navigator" aria-hidden="true" inert>
       <div class="cmdk__backdrop" id="cmdk-backdrop"></div>
       <div class="cmdk__panel" role="document">
         <div class="cmdk__field">
@@ -826,7 +824,7 @@ gltest tests/test_contract.py</code></pre>
             <span class="cmdk__step">4.0</span>
             <span class="cmdk__item-main">
               <span class="cmdk__item-title">Authoritative readback</span>
-              <span class="cmdk__item-desc">Query get_case with TransactionHashVariant.LATEST_FINAL</span>
+              <span class="cmdk__item-desc">Open the settled case record after consensus</span>
             </span>
             <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
           </button>
@@ -852,7 +850,7 @@ gltest tests/test_contract.py</code></pre>
             <span class="cmdk__step">§3</span>
             <span class="cmdk__item-main">
               <span class="cmdk__item-title">Data & numeric policy</span>
-              <span class="cmdk__item-desc">HTTPS bounds, canonical keys, string-to-u256 scaling</span>
+              <span class="cmdk__item-desc">HTTPS bounds, canonical keys, scaled integer amounts</span>
             </span>
             <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
           </button>
@@ -868,7 +866,7 @@ gltest tests/test_contract.py</code></pre>
             <span class="cmdk__step">§5</span>
             <span class="cmdk__item-main">
               <span class="cmdk__item-title">Contract method reference</span>
-              <span class="cmdk__item-desc">create_case, freeze_case, assess, retry_unresolved, get_case</span>
+              <span class="cmdk__item-desc">Public actions, lifecycle states, and access controls</span>
             </span>
             <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
           </button>
@@ -902,6 +900,7 @@ gltest tests/test_contract.py</code></pre>
           <span><kbd>↵</kbd> jump</span>
           <span><kbd>esc</kbd> close</span>
         </div>
+      </div>
       </div>
     </div>
 
