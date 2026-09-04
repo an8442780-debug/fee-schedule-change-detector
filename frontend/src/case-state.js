@@ -1,3 +1,5 @@
+import { TransactionHashVariant } from "genlayer-js/types";
+
 const RESOLVED_OUTCOMES = new Set([
   "SAME_SCHEDULE",
   "FEE_CHANGED",
@@ -73,4 +75,35 @@ export function rowCounts(caseData) {
     old: Array.isArray(caseData?.old_rows) ? caseData.old_rows.length : 0,
     new: Array.isArray(caseData?.new_rows) ? caseData.new_rows.length : 0,
   };
+}
+
+export function authoritativeCaseReadRequest(contractAddress, caseId) {
+  return {
+    address: contractAddress,
+    functionName: "get_case",
+    args: [caseId],
+    transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
+  };
+}
+
+export function formatScaledAmount(value, scale) {
+  const raw = Number.isSafeInteger(value) && value >= 0
+    ? String(value)
+    : typeof value === "string" && /^\d+$/.test(value)
+      ? value
+      : "";
+  if (!raw || !Number.isInteger(scale) || scale < 0 || scale > 6) return "Unavailable";
+  if (scale === 0) return raw;
+  const padded = raw.padStart(scale + 1, "0");
+  return `${padded.slice(0, -scale)}.${padded.slice(-scale)}`;
+}
+
+export function formatRowEvidence(row, scale) {
+  if (!row || typeof row !== "object") return "Unavailable";
+  return [
+    String(row.service_code ?? "UNKNOWN"),
+    String(row.unit ?? "UNKNOWN"),
+    `${formatScaledAmount(row.amount_scaled, scale)} ${String(row.currency ?? "UNKNOWN")}`,
+    `effective ${String(row.effective_date ?? "UNKNOWN")}`,
+  ].join(" · ");
 }

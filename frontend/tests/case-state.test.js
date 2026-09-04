@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { caseReadbackMatches, createdCaseReadbackMatches, rowCounts } from "../src/case-state.js";
+import {
+  authoritativeCaseReadRequest,
+  caseReadbackMatches,
+  createdCaseReadbackMatches,
+  formatRowEvidence,
+  formatScaledAmount,
+  rowCounts,
+} from "../src/case-state.js";
 
 const frozenUnresolved = {
   case_id: "case-1",
@@ -69,4 +76,25 @@ test("row counts remain separate for unequal old and new snapshots", () => {
     old_rows: [{}, {}],
     new_rows: [{}],
   }), { old: 2, new: 1 });
+});
+
+test("authoritative amounts and rows render without floating-point conversion", () => {
+  assert.equal(formatScaledAmount(1250, 2), "12.50");
+  assert.equal(formatScaledAmount("1300", 2), "13.00");
+  assert.equal(formatRowEvidence({
+    service_code: "BASE",
+    unit: "day",
+    amount_scaled: 1300,
+    currency: "USD",
+    effective_date: "2026-01-01",
+  }, 2), "BASE · day · 13.00 USD · effective 2026-01-01");
+});
+
+test("get_case read requests explicitly use the latest finalized variant", () => {
+  assert.deepEqual(authoritativeCaseReadRequest("0xcontract", "case-1"), {
+    address: "0xcontract",
+    functionName: "get_case",
+    args: ["case-1"],
+    transactionHashVariant: "latest-final",
+  });
 });

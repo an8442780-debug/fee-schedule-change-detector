@@ -2,7 +2,14 @@ import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { connectWallet, subscribeWallets, validateWalletForWrite } from "./wallets.js";
 import { executeWrite, explorerUrl, readPending, reconcilePending } from "./transactions.js";
-import { caseReadbackMatches, createdCaseReadbackMatches, rowCounts } from "./case-state.js";
+import {
+  authoritativeCaseReadRequest,
+  caseReadbackMatches,
+  createdCaseReadbackMatches,
+  formatRowEvidence,
+  formatScaledAmount,
+  rowCounts,
+} from "./case-state.js";
 import "./style.css";
 
 const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS?.trim() ?? "";
@@ -41,7 +48,7 @@ function requireAddress() {
 
 async function readCase(caseId) {
   requireAddress();
-  const value = await readClient.readContract({ address: contractAddress, functionName: "get_case", args: [caseId] });
+  const value = await readClient.readContract(authoritativeCaseReadRequest(contractAddress, caseId));
   const parsed = typeof value === "string" ? JSON.parse(value) : value;
   lastCase = parsed;
   renderCase(parsed);
@@ -50,6 +57,12 @@ async function readCase(caseId) {
 
 function renderCase(caseData) {
   const counts = rowCounts(caseData);
+  const currency = String(caseData.currency ?? "UNKNOWN");
+  const assessed = caseData.outcome !== "UNRESOLVED";
+  const oldAmount = assessed ? formatScaledAmount(caseData.old_amount, caseData.scale) : "Not assessed";
+  const newAmount = assessed ? formatScaledAmount(caseData.new_amount, caseData.scale) : "Not assessed";
+  const oldScaled = assessed ? String(caseData.old_amount ?? "") : "Not assessed";
+  const newScaled = assessed ? String(caseData.new_amount ?? "") : "Not assessed";
   resultPanel.replaceChildren();
 
   const top = document.createElement("div");
@@ -68,10 +81,27 @@ function renderCase(caseData) {
   const facts = document.createElement("dl");
   facts.className = "case-facts";
   appendFact(facts, "Case", caseData.case_id);
+  appendFact(facts, "Currency", currency);
+  appendFact(facts, "Scale", caseData.scale);
+  appendFact(facts, "Old amount", `${oldAmount} ${currency} (scaled ${oldScaled})`);
+  appendFact(facts, "New amount", `${newAmount} ${currency} (scaled ${newScaled})`);
+  appendFact(facts, "Amount change", `${oldAmount} ${currency} → ${newAmount} ${currency}`);
+  appendFact(facts, "Old date", caseData.old_date || "Not assessed");
+  appendFact(facts, "New date", caseData.new_date || "Not assessed");
   appendFact(facts, "Old rows", counts.old);
   appendFact(facts, "New rows", counts.new);
+  appendRows(facts, "Old row", caseData.old_rows, caseData.scale);
+  appendRows(facts, "New row", caseData.new_rows, caseData.scale);
   appendFact(facts, "Evidence digest", caseData.evidence_digest || "Not assessed", "mono");
   resultPanel.append(top, facts);
+}
+
+function appendRows(list, label, rows, scale) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    appendFact(list, label, "None");
+    return;
+  }
+  rows.forEach((row, index) => appendFact(list, `${label} ${index + 1}`, formatRowEvidence(row, scale), "mono"));
 }
 
 function appendFact(list, label, value, className = "") {
