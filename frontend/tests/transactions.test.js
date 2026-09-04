@@ -121,3 +121,25 @@ test("consensus disagreement is not a successful write", async () => {
   );
   assert.equal(readPending()?.hash, HASH);
 });
+
+test("unknown finalized execution metadata retains the recovery journal", async () => {
+  storage.clear();
+  storage.set("fee-schedule-change-detector:pending-write", JSON.stringify({
+    contractAddress: CONTRACT,
+    functionName: "create_case",
+    args: ["case-unknown-receipt"],
+    hash: HASH,
+  }));
+  let readbackCalled = false;
+  await assert.rejects(
+    reconcilePending({
+      client: clientWith({ statusName: "FINALIZED", result_name: "MAJORITY_AGREE" }),
+      readback: async () => { readbackCalled = true; return true; },
+      onUpdate: () => {},
+    }),
+    /Contract execution failed: UNKNOWN/i,
+  );
+  assert.equal(readbackCalled, false);
+  assert.equal(readPending()?.hash, HASH);
+  storage.clear();
+});

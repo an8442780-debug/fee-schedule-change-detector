@@ -25,6 +25,7 @@ function executionName(transaction) {
   if (transaction?.txExecutionResultName) return String(transaction.txExecutionResultName);
   const leader = transaction?.consensus_data?.leader_receipt?.find((receipt) => receipt?.mode === "leader");
   if (leader?.execution_result === "SUCCESS" && leader?.result?.status === "return") return "FINISHED_WITH_RETURN";
+  if (leader?.execution_result === "ERROR" && leader?.result?.status === "rollback") return ExecutionResult.FINISHED_WITH_ERROR;
   return "";
 }
 
@@ -53,7 +54,7 @@ function isTerminalExecutionFailure(transaction) {
   const consensus = String(transaction?.resultName ?? transaction?.result_name ?? "").toUpperCase();
   return status === TransactionStatus.FINALIZED
     && consensus === TransactionResult.MAJORITY_AGREE
-    && executionName(transaction) !== ExecutionResult.FINISHED_WITH_RETURN;
+    && executionName(transaction) === ExecutionResult.FINISHED_WITH_ERROR;
 }
 
 export function readPending() {
@@ -88,7 +89,7 @@ export async function executeWrite({ client, contractAddress, functionName, args
     volatileWrite = null;
     return { hash, transaction, state };
   } catch (error) {
-    if (!hash) volatileWrite = null;
+    if (!hash || readPending()?.hash === hash) volatileWrite = null;
     throw error;
   }
 }
