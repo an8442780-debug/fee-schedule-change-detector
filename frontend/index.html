@@ -2,59 +2,909 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Compare two public fee schedules with validator-backed evidence." />
-    <title>Fee Schedule Change Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Compare two public fee schedules with validator-backed consensus on GenLayer." />
+    <title>Fee Schedule Change Detector · GenLayer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div class="app-shell" id="app-shell">
-      <header class="topbar">
-        <a class="brand" href="/">Fee Schedule Change Detector</a>
-        <button class="button button-secondary" id="connect-wallet" type="button">Connect wallet</button>
+      <!-- Topbar Header (N13 Archetype) -->
+      <header class="topbar" id="topbar">
+        <div class="topbar__inner">
+          <a class="brand" href="/" aria-label="Fee Schedule Change Detector home">
+            <svg class="brand-mark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M8 12h8" />
+              <path d="M12 8v8" />
+              <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+            </svg>
+            <span class="brand-name">Fee Schedule Change Detector</span>
+          </a>
+
+          <nav class="topbar__nav" aria-label="Product documentation navigation">
+            <a class="nav-link" href="#workflow">Workflow</a>
+            <a class="nav-link" href="#verification-model">Verification</a>
+            <a class="nav-link" href="#evidence-reference">Outcomes</a>
+            <a class="nav-link" href="#numeric-policy">Policy</a>
+            <a class="nav-link" href="#lifecycle-reference">Lifecycle</a>
+            <a class="nav-link" href="#method-reference">Methods</a>
+            <a class="nav-link" href="#safety-trust">Safety</a>
+            <a class="nav-link" href="#quickstart-support">Support</a>
+          </nav>
+
+          <button class="searchpill" id="searchpill" type="button" aria-label="Jump to stage or documentation section (Press Ctrl+K or ⌘K)" aria-haspopup="dialog" aria-expanded="false" aria-controls="cmdk">
+            <span class="searchpill__ico" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </span>
+            <span class="searchpill__text">Jump to section…</span>
+            <span class="searchpill__kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
+          </button>
+
+          <div class="topbar__actions">
+            <button class="button button-secondary" id="connect-wallet" type="button">Connect wallet</button>
+          </div>
+        </div>
       </header>
+
       <main class="page" id="main-content">
-        <section class="hero" aria-labelledby="page-title">
-          <p class="eyebrow">Public-source verification</p>
+        <!-- Section 1: Strong Product Statement -->
+        <section class="hero" id="overview" aria-labelledby="page-title">
+          <p class="eyebrow">Public-source verification · GenLayer Studionet</p>
           <h1 id="page-title">Make fee changes visible before they become costly.</h1>
-          <p class="hero-copy">Freeze two HTTPS sources, let GenLayer validators independently normalize each row, and keep disagreements unresolved instead of silently choosing a winner.</p>
-          <div class="trust-strip" aria-label="Decision outcomes">
-            <span>SAME_SCHEDULE</span><span>FEE_CHANGED</span><span>ROW_ADDED</span><span>UNRESOLVED</span>
+          <p class="hero-copy">Fee Schedule Change Detector compares two public fee-schedule snapshots and records a validator-backed result on GenLayer. When published tariffs drift, rates change, or new rows appear, validators independently normalize each row and record the exact divergence on-chain instead of silently choosing one source.</p>
+          <div class="trust-strip" aria-label="Deterministic outcomes">
+            <span class="trust-pill"><span class="trust-dot trust-dot--same"></span>SAME_SCHEDULE</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--change"></span>FEE_CHANGED</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--conflict"></span>DATE_CONFLICT</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--currency"></span>CURRENCY_CHANGED</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--unit"></span>UNIT_CHANGED</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--add"></span>ROW_ADDED</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--removed"></span>ROW_REMOVED</span>
+            <span class="trust-pill"><span class="trust-dot trust-dot--unresolved"></span>UNRESOLVED</span>
           </div>
         </section>
 
-        <section class="workspace-grid" aria-label="Fee schedule workflow">
-          <article class="card workflow-card">
-            <div class="section-heading"><div><p class="eyebrow">01 / Create a case</p><h2>Bind the evidence window</h2></div><span class="status-dot" aria-hidden="true"></span></div>
-            <form id="case-form" novalidate>
-              <label>Case ID<input name="caseId" required maxlength="64" placeholder="2026-transport-fees" /></label>
-              <label>Older source URL<input name="urlA" type="url" required placeholder="https://publisher.example/fees-old.json" /></label>
-              <label>Newer source URL<input name="urlB" type="url" required placeholder="https://publisher.example/fees-new.json" /></label>
-              <div class="two-col"><label>Currency<input name="currency" required maxlength="3" value="USD" /></label><label>Scale<input name="scale" type="number" min="0" max="6" value="2" required /></label></div>
-              <button class="button button-primary" type="submit">Create case</button>
-            </form>
-          </article>
+        <!-- Section 2: Live Narrative Workflow (1.0 Bind → 2.0 Freeze → 3.0 Assess → 4.0 Read back) -->
+        <section class="workflow-section" id="workflow" aria-label="Fee schedule verification workflow">
+          <div class="section-lead">
+            <p class="eyebrow">Live execution</p>
+            <h2 class="section-title">Narrative verification workflow</h2>
+            <p class="section-desc">Execute the 4-stage lifecycle on GenLayer Studionet: declare source endpoints, freeze the evidence window, trigger consensus assessment, and read back the authoritative on-chain state.</p>
+          </div>
 
-          <article class="card workflow-card">
-            <div class="section-heading"><div><p class="eyebrow">02 / Advance carefully</p><h2>Freeze, assess, read back</h2></div><span class="step-number">02</span></div>
-            <form id="action-form" novalidate>
-              <label>Case ID<input name="actionCaseId" required placeholder="2026-transport-fees" /></label>
-              <div class="action-grid"><button class="button button-secondary" data-action="freeze" type="button">Freeze</button><button class="button button-secondary" data-action="assess" type="button">Assess</button><button class="button button-secondary" data-action="retry" type="button">Retry unresolved</button><button class="button button-quiet" data-action="read" type="button">Read case</button></div>
-            </form>
-            <div class="result-panel" id="result-panel" aria-live="polite"><p class="muted">No case loaded yet.</p></div>
-          </article>
+          <nav class="timeline-nav" aria-label="Narrative workflow timeline">
+            <a class="timeline-step is-active" href="#stage-create">
+              <span class="timeline-num">1.0</span>
+              <span class="timeline-label">Bind</span>
+            </a>
+            <span class="timeline-sep" aria-hidden="true">→</span>
+            <a class="timeline-step" href="#stage-freeze">
+              <span class="timeline-num">2.0</span>
+              <span class="timeline-label">Freeze</span>
+            </a>
+            <span class="timeline-sep" aria-hidden="true">→</span>
+            <a class="timeline-step" href="#stage-assess">
+              <span class="timeline-num">3.0</span>
+              <span class="timeline-label">Assess</span>
+            </a>
+            <span class="timeline-sep" aria-hidden="true">→</span>
+            <a class="timeline-step" href="#stage-readback">
+              <span class="timeline-num">4.0</span>
+              <span class="timeline-label">Read back</span>
+            </a>
+          </nav>
+
+          <div class="workspace-grid">
+            <!-- Stage 1.0: Bind evidence window -->
+            <article class="card workflow-card" id="stage-create">
+              <div class="stage-header">
+                <span class="stage-badge">1.0</span>
+                <div class="stage-meta">
+                  <p class="stage-kicker">Stage 1.0 · Intake</p>
+                  <h3 class="stage-heading">Bind the evidence window</h3>
+                </div>
+              </div>
+              <p class="stage-description">Declare baseline and updated HTTPS source URLs, ISO-4217 currency, and decimal scale to construct a verifiable case.</p>
+              <form id="case-form" novalidate>
+                <div class="form-field">
+                  <label for="field-case-id">Case ID</label>
+                  <input id="field-case-id" name="caseId" required maxlength="64" placeholder="2026-transport-fees" autocomplete="off" spellcheck="false" />
+                  <p class="field-hint">Unique case key for on-chain identity and storage lookup.</p>
+                </div>
+                <div class="form-field">
+                  <label for="field-url-a">Older source URL (Snapshot A)</label>
+                  <input id="field-url-a" name="urlA" type="url" required placeholder="https://publisher.example/fees-old.json" autocomplete="off" spellcheck="false" />
+                  <p class="field-hint">Public HTTPS endpoint providing the baseline fee schedule.</p>
+                </div>
+                <div class="form-field">
+                  <label for="field-url-b">Newer source URL (Snapshot B)</label>
+                  <input id="field-url-b" name="urlB" type="url" required placeholder="https://publisher.example/fees-new.json" autocomplete="off" spellcheck="false" />
+                  <p class="field-hint">Public HTTPS endpoint providing the revised fee schedule.</p>
+                </div>
+                <div class="form-row two-col">
+                  <div class="form-field">
+                    <label for="field-currency">Currency</label>
+                    <input id="field-currency" name="currency" required maxlength="3" value="USD" autocomplete="off" spellcheck="false" />
+                  </div>
+                  <div class="form-field">
+                    <label for="field-scale">Scale (decimals)</label>
+                    <input id="field-scale" name="scale" type="number" min="0" max="6" value="2" required autocomplete="off" />
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="button button-primary" type="submit">Create case</button>
+                </div>
+              </form>
+            </article>
+
+            <!-- Stages 2.0, 3.0, 4.0: Lifecycle actions and evidence readback -->
+            <article class="card workflow-card" id="stage-lifecycle">
+              <form id="action-form" novalidate>
+                <div class="form-field action-case-header">
+                  <label for="action-case-id">
+                    <span class="label-primary">Target Case ID</span>
+                    <span class="label-secondary">Synced on case creation or enter an existing case ID</span>
+                  </label>
+                  <input id="action-case-id" name="actionCaseId" required placeholder="2026-transport-fees" autocomplete="off" spellcheck="false" />
+                </div>
+
+                <div class="lifecycle-stages">
+                  <!-- Stage 2.0: Freeze -->
+                  <div class="stage-subcard" id="stage-freeze">
+                    <div class="stage-subcard__header">
+                      <span class="stage-badge stage-badge--sub">2.0</span>
+                      <div class="stage-subcard__meta">
+                        <h4 class="stage-subheading">Freeze schedules</h4>
+                        <p class="stage-subcopy">Locks the case URLs and evidence window from DRAFT to FROZEN. Source contents are fetched during assessment.</p>
+                      </div>
+                    </div>
+                    <div class="stage-subcard__action">
+                      <button class="button button-secondary" data-action="freeze" type="button">Freeze</button>
+                    </div>
+                  </div>
+
+                  <!-- Stage 3.0: Assess -->
+                  <div class="stage-subcard" id="stage-assess">
+                    <div class="stage-subcard__header">
+                      <span class="stage-badge stage-badge--sub">3.0</span>
+                      <div class="stage-subcard__meta">
+                        <h4 class="stage-subheading">Assess consensus</h4>
+                        <p class="stage-subcopy">Validators independently normalize rows, scale amounts to u256, and detect changes. Unresolved outcomes fail closed.</p>
+                      </div>
+                    </div>
+                    <div class="stage-subcard__action-group">
+                      <button class="button button-secondary" data-action="assess" type="button">Assess</button>
+                      <button class="button button-secondary button-subtle" data-action="retry" type="button">Retry unresolved</button>
+                    </div>
+                  </div>
+
+                  <!-- Stage 4.0: Authoritative readback & Evidence window -->
+                  <div class="stage-subcard stage-subcard--graphite" id="stage-readback">
+                    <div class="stage-subcard__header stage-subcard__header--graphite">
+                      <span class="stage-badge stage-badge--graphite">4.0</span>
+                      <div class="stage-subcard__meta">
+                        <h4 class="stage-subheading stage-subheading--graphite">Authoritative readback</h4>
+                        <p class="stage-subcopy stage-subcopy--graphite">Direct get_case call bound to TransactionHashVariant.LATEST_FINAL.</p>
+                      </div>
+                      <div class="stage-subcard__read-action">
+                        <button class="button button-quiet" data-action="read" type="button">Read case</button>
+                      </div>
+                    </div>
+                    <div class="evidence-surface">
+                      <div class="result-panel" id="result-panel" aria-live="polite">
+                        <p class="muted">No case loaded yet. Submit a read or execute a workflow stage above.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </article>
+          </div>
         </section>
 
-        <section class="proof-card card" aria-labelledby="proof-title"><div><p class="eyebrow">What is proven</p><h2 id="proof-title">A result is not successful until the chain says so.</h2><p class="muted">The interface keeps the transaction hash, waits for GenLayer finality, checks semantic execution, and only then accepts authoritative case readback.</p></div><dl class="proof-list"><div><dt>Source identity</dt><dd>HTTPS + frozen URLs</dd></div><div><dt>Numeric policy</dt><dd>String amounts → u256</dd></div><div><dt>Consensus</dt><dd>Independent row re-derivation</dd></div></dl></section>
+        <!-- Section 3: Verification Model -->
+        <section class="doc-section" id="verification-model" aria-labelledby="verification-title">
+          <div class="section-lead">
+            <p class="eyebrow">Architecture · Equivalence Principle</p>
+            <h2 class="section-title" id="verification-title">Consensus-driven row derivation across independent validators</h2>
+            <p class="section-desc">Traditional oracles rely on trusted relays or single-reporter signatures. GenLayer executes nondeterministic web fetches directly within the smart contract execution environment, requiring independent re-derivation across validator nodes.</p>
+          </div>
+
+          <div class="features-grid three-col">
+            <div class="feature-card">
+              <div class="feature-icon" aria-hidden="true">01</div>
+              <h3 class="feature-title">Leader normalization</h3>
+              <p class="feature-text">The proposing leader fetches both HTTPS endpoints using <code>gl.nondet.web.get()</code>. Responses (capped at 64 KB) are parsed, validated, and normalized into canonical key-value structures where service codes are uppercase and billing units are lowercase.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" aria-hidden="true">02</div>
+              <h3 class="feature-title">Independent re-derivation</h3>
+              <p class="feature-text">Validators do not simply vote on the leader’s output. Under GenLayer’s Equivalence Principle (<code>gl.vm.run_nondet_unsafe</code>), each validator independently re-fetches both URLs, executes the exact same normalization logic, and verifies the derivation.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" aria-hidden="true">03</div>
+              <h3 class="feature-title">Fail-closed finality</h3>
+              <p class="feature-text">Transactions progress through <code>Accepted PENDING → PROPOSING → COMMITTING → REVEALING → ACCEPTED</code>. If upstream sources timeout, return HTTP errors, or validators disagree on normalized results, the contract records <code>UNRESOLVED</code> and refuses to mutate state.</p>
+            </div>
+          </div>
+
+          <details class="doc-disclosure">
+            <summary class="doc-summary">
+              <span class="doc-summary__title">Technical specification: Equivalence principle & validator consensus cycle</span>
+              <span class="doc-summary__icon" aria-hidden="true">↓</span>
+            </summary>
+            <div class="doc-disclosure__body">
+              <div class="spec-table-wrap">
+                <table class="spec-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Consensus Phase</th>
+                      <th scope="col">Execution Context</th>
+                      <th scope="col">Verification Invariant</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>PENDING</code></td>
+                      <td>Mempool submission</td>
+                      <td>Transaction received by Studionet RPC node; pending recovery journal logs hash.</td>
+                    </tr>
+                    <tr>
+                      <td><code>PROPOSING</code></td>
+                      <td>Elected leader</td>
+                      <td>Leader runs <code>_fetch_bundle</code>, executes JSON parse, builds canonical row map, and proposes outcome.</td>
+                    </tr>
+                    <tr>
+                      <td><code>COMMITTING</code></td>
+                      <td>Validator committee</td>
+                      <td>Validators commit cryptographic commitments of their independent nondeterministic executions.</td>
+                    </tr>
+                    <tr>
+                      <td><code>REVEALING</code></td>
+                      <td>Validator committee</td>
+                      <td>Validators reveal executions. Committee checks equivalence of normalized row structures.</td>
+                    </tr>
+                    <tr>
+                      <td><code>ACCEPTED</code></td>
+                      <td>Studionet finality</td>
+                      <td>Majority agreement achieves finality; case state updates to <code>ASSESSED</code> (or remains <code>FROZEN</code> on unresolved).</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 4: Evidence & Outcome Vocabulary Reference -->
+        <section class="doc-section" id="evidence-reference" aria-labelledby="evidence-title">
+          <div class="section-lead">
+            <p class="eyebrow">Contract Specification · 8 Outcomes</p>
+            <h2 class="section-title" id="evidence-title">Deterministic outcome taxonomy for fee schedule comparison</h2>
+            <p class="section-desc">The Intelligent Contract analyzes differences across canonical row keys, billing units, effective dates, amounts, and currencies. Every comparison resolves to exactly one of 8 mutually exclusive contract outcomes.</p>
+          </div>
+
+          <div class="outcomes-grid">
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-same_schedule">SAME_SCHEDULE</div>
+              <h3 class="outcome-title">Identical fee schedules</h3>
+              <p class="outcome-desc">Both snapshots contain identical canonical rows <code>(service_code, unit)</code> with matching scaled amounts, dates, and currencies. Zero fee divergence detected.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val">Exact row equality across all keys and values</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-fee_changed">FEE_CHANGED</div>
+              <h3 class="outcome-title">Amount divergence</h3>
+              <p class="outcome-desc">Canonical rows match identity, but at least one row has a differing <code>amount_scaled</code>. Persists <code>old_amount</code> and <code>new_amount</code> on-chain (no on-chain delta field; the UI displays the comparison). Amount check precedes date check, winning if both differ.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val"><code>old_amount_scaled != new_amount_scaled</code> (takes precedence over date conflict)</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-date_conflict">DATE_CONFLICT</div>
+              <h3 class="outcome-title">Conflicting effective dates</h3>
+              <p class="outcome-desc">Canonical service codes, units, and amounts match, but effective dates differ between snapshots. Flags uncoordinated timeline changes.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val"><code>old_date != new_date</code> with identical amounts</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-currency_changed">CURRENCY_CHANGED</div>
+              <h3 class="outcome-title">Cross-snapshot currency shift</h3>
+              <p class="outcome-desc">Both snapshots are valid, but Snapshot A currency differs from Snapshot B currency (top-level or per-row). Prevents cross-currency fee comparisons.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val"><code>first.currency != second.currency</code> across valid snapshots</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-unit_changed">UNIT_CHANGED</div>
+              <h3 class="outcome-title">Billing unit shift</h3>
+              <p class="outcome-desc">A service code exists in both schedules but is billed under differing units (e.g. <code>per_request</code> versus <code>per_hour</code>), preventing valid direct amount comparison.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val">Same service code, differing normalized unit</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-row_added">ROW_ADDED</div>
+              <h3 class="outcome-title">New fee row introduced</h3>
+              <p class="outcome-desc">Snapshot B introduces one or more canonical rows <code>(service_code, unit)</code> that did not exist in Snapshot A. Represents new service charges or tier additions.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val">Key present in B, absent in A</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-row_removed">ROW_REMOVED</div>
+              <h3 class="outcome-title">Existing fee row deleted</h3>
+              <p class="outcome-desc">Snapshot A contains canonical rows that are absent in Snapshot B. Represents retired tiers, sunset services, or fee removals.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val">Key present in A, absent in B</span>
+              </div>
+            </div>
+
+            <div class="outcome-card">
+              <div class="outcome-badge outcome-unresolved">UNRESOLVED</div>
+              <h3 class="outcome-title">Consensus failure or invalid source</h3>
+              <p class="outcome-desc">Either normalized snapshot is invalid/unavailable (HTTP error, timeout, >64 KB, schema violation), snapshot currency differs from case policy currency, or validators disagree during consensus. Case remains <code>FROZEN</code>.</p>
+              <div class="outcome-meta">
+                <span class="meta-label">Trigger:</span>
+                <span class="meta-val">Invalid/unavailable snapshot, policy currency mismatch, or split consensus</span>
+              </div>
+            </div>
+          </div>
+
+          <details class="doc-disclosure">
+            <summary class="doc-summary">
+              <span class="doc-summary__title">Outcome evaluation priority & difference analysis algorithm</span>
+              <span class="doc-summary__icon" aria-hidden="true">↓</span>
+            </summary>
+            <div class="doc-disclosure__body">
+              <div class="code-block">
+                <pre class="mono"><code>1. Snapshot Availability & Currency Validation:
+   if not first.ok or not second.ok:
+       return UNRESOLVED
+   if first.currency != second.currency:
+       return CURRENCY_CHANGED
+   if first.currency != policy_currency:
+       return UNRESOLVED
+
+2. Unit Conflict Check:
+   if has_unit_conflict(old_codes, new_codes):
+       return UNIT_CHANGED
+
+3. Set Difference (Added / Removed Rows):
+   if set(new_keys) - set(old_keys):
+       return ROW_ADDED
+   if set(old_keys) - set(new_keys):
+       return ROW_REMOVED
+
+4. Row Currency, Amount & Date Precedence:
+   if any(old.currency != new.currency for key in matching_keys):
+       return CURRENCY_CHANGED
+   if any(old.amount_scaled != new.amount_scaled for key in matching_keys):
+       return FEE_CHANGED  # Amount precedes date check; wins if both differ
+   if any(old.effective_date != new.effective_date for key in matching_keys):
+       return DATE_CONFLICT
+
+5. Exact Equality:
+   return SAME_SCHEDULE</code></pre>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 5: Data & Numeric Policy -->
+        <section class="doc-section" id="numeric-policy" aria-labelledby="numeric-title">
+          <div class="section-lead">
+            <p class="eyebrow">Data Integrity · Numeric Safety</p>
+            <h2 class="section-title" id="numeric-title">Strict string-to-u256 scaling and zero floating-point arithmetic</h2>
+            <p class="section-desc">Smart contract execution across decentralized nodes requires complete bit-level determinism. Floating-point arithmetic introduces IEEE-754 rounding differences across CPU architectures and is strictly banned.</p>
+          </div>
+
+          <div class="policy-grid">
+            <div class="policy-card">
+              <h3 class="policy-heading">HTTPS source constraints</h3>
+              <ul class="policy-list">
+                <li>Endpoints must use the <code>https://</code> scheme; plaintext HTTP is rejected.</li>
+                <li>URL strings are limited to 256 characters; endpoints must be distinct.</li>
+                <li>Snapshot A and Snapshot B URLs must be strictly distinct.</li>
+                <li>Response bodies are bounded at 64 KB (<code>MAX_RESPONSE_BYTES = 65536</code>).</li>
+              </ul>
+            </div>
+
+            <div class="policy-card">
+              <h3 class="policy-heading">Canonical row identity</h3>
+              <ul class="policy-list">
+                <li>Composite primary key: <code>service_code|unit</code>.</li>
+                <li>Service codes normalized to uppercase, trimmed (<code>MAX_CODE_LENGTH = 64</code>).</li>
+                <li>Billing units normalized to lowercase, trimmed (<code>MAX_UNIT_LENGTH = 32</code>).</li>
+                <li>The delimiter character <code>|</code> is rejected inside code or unit fields.</li>
+                <li>Max 128 rows per fee schedule snapshot (<code>MAX_ROWS = 128</code>).</li>
+              </ul>
+            </div>
+
+            <div class="policy-card">
+              <h3 class="policy-heading">Currency & decimal scale</h3>
+              <ul class="policy-list">
+                <li>Accepts the explicit supported currency set: USD, EUR, GBP, CAD, AUD, CHF, CNY, INR (scale 2) and JPY, KRW (scale 0).</li>
+                <li><code>create_case</code> requires the supplied scale to match the supported currency scale (up to <code>MAX_SCALE = 6</code>).</li>
+                <li>Arbitrary or unmapped ISO-4217 currency codes are rejected.</li>
+              </ul>
+            </div>
+
+            <div class="policy-card">
+              <h3 class="policy-heading">String-to-scaled-integer (u256)</h3>
+              <ul class="policy-list">
+                <li>Amounts in JSON are parsed directly from string to integer scaled by <code>10^scale</code>.</li>
+                <li>E.g. <code>"12.50"</code> with scale 2 maps directly to integer <code>1250</code>.</li>
+                <li>Amount range bounded by <code>MAX_AMOUNT = (2^128) - 1</code>.</li>
+                <li>Zero floating-point operations occur inside contract assessment.</li>
+              </ul>
+            </div>
+          </div>
+
+          <details class="doc-disclosure">
+            <summary class="doc-summary">
+              <span class="doc-summary__title">Canonical JSON payload schema for public fee snapshots</span>
+              <span class="doc-summary__icon" aria-hidden="true">↓</span>
+            </summary>
+            <div class="doc-disclosure__body">
+              <div class="code-block">
+                <pre class="mono"><code>{
+  "currency": "USD",
+  "rows": [
+    {
+      "code": "NETWORK_EGRESS",
+      "unit": "gb",
+      "amount": "0.08",
+      "effective_date": "2026-09-01"
+    },
+    {
+      "code": "COMPUTE_VCPU",
+      "unit": "hour",
+      "amount": "0.04",
+      "effective_date": "2026-09-01"
+    }
+  ]
+}</code></pre>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 6: Lifecycle State Machine Reference -->
+        <section class="doc-section" id="lifecycle-reference" aria-labelledby="lifecycle-title">
+          <div class="section-lead">
+            <p class="eyebrow">State Machine · Immutable Execution</p>
+            <h2 class="section-title" id="lifecycle-title">Deterministic lifecycle transitions: DRAFT → FROZEN → ASSESSED</h2>
+            <p class="section-desc">Cases progress through an intentionally irreversible lifecycle designed to prevent retroactive tampering with evidence windows or fee conclusions.</p>
+          </div>
+
+          <div class="lifecycle-flow">
+            <div class="lifecycle-node">
+              <span class="lifecycle-node__badge">1. DRAFT</span>
+              <h3 class="lifecycle-node__title">Case initialization</h3>
+              <p class="lifecycle-node__desc">Created by caller with target URLs, currency, and scale. Owner address is sealed. Case parameters cannot be modified after creation.</p>
+            </div>
+            <div class="lifecycle-arrow" aria-hidden="true">→</div>
+            <div class="lifecycle-node">
+              <span class="lifecycle-node__badge">2. FROZEN</span>
+              <h3 class="lifecycle-node__title">Evidence locked</h3>
+              <p class="lifecycle-node__desc">Owner triggers <code>freeze_case()</code>. Source URLs are immutable. Ready for validator consensus assessment.</p>
+            </div>
+            <div class="lifecycle-arrow" aria-hidden="true">→</div>
+            <div class="lifecycle-node">
+              <span class="lifecycle-node__badge">3. ASSESSED</span>
+              <h3 class="lifecycle-node__title">Consensus finalized</h3>
+              <p class="lifecycle-node__desc">Validators independently fetch and compare schedules. When consensus resolves, state advances to <code>ASSESSED</code> with final outcome.</p>
+            </div>
+          </div>
+
+          <div class="features-grid two-col">
+            <div class="feature-card">
+              <h3 class="feature-title">Bounded retry path (MAX_RETRIES = 3)</h3>
+              <p class="feature-text">When an assessment results in <code>UNRESOLVED</code> (e.g. transient HTTP 503 or network partition), the case remains in <code>FROZEN</code> state rather than failing open. Callers can invoke <code>retry_unresolved()</code> up to 3 times (<code>MAX_RETRIES = 3</code>). Once retry count reaches 3, further attempts revert.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Pending transaction recovery journal</h3>
+              <p class="feature-text">The frontend maintains an in-browser local storage journal for all submitted transactions. If the browser is refreshed or network interrupts during consensus, the app recovers the pending hash and reconciles the write before permitting any new submission.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Intentionally frozen architecture</h3>
+              <p class="feature-text">The deployed contract contains zero proxy dispatchers, zero delegatecalls, and zero upgrade mechanisms. Its logic is permanent and unchangeable. Verification results are immutable records.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">LATEST_FINAL authoritative readback</h3>
+              <p class="feature-text">All frontend state verification explicitly binds <code>get_case</code> calls to <code>TransactionHashVariant.LATEST_FINAL</code> via <code>genlayer-js</code>, ensuring the client never reads speculative or unfinalized validator state.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 7: Method Reference -->
+        <section class="doc-section" id="method-reference" aria-labelledby="methods-title">
+          <div class="section-lead">
+            <p class="eyebrow">Interface Specification · GenLayer Python ABI</p>
+            <h2 class="section-title" id="methods-title">Intelligent contract method signatures and access controls</h2>
+            <p class="section-desc">Full interface specification for the 5 public and owner methods deployed on Studionet.</p>
+          </div>
+
+          <div class="methods-list">
+            <article class="method-item">
+              <div class="method-item__header">
+                <code class="method-item__sig mono">create_case(case_id: str, url_a: str, url_b: str, currency: str, scale: int)</code>
+                <span class="method-item__tag method-item__tag--public">Public Write</span>
+              </div>
+              <p class="method-item__desc">Initializes a new comparison case in <code>DRAFT</code> state. Stores <code>gl.message.sender_address</code> as the case owner. Validates HTTPS schemes, limits URL lengths to 256 characters, verifies URL uniqueness, and requires the supplied scale to match the supported currency scale.</p>
+            </article>
+
+            <article class="method-item">
+              <div class="method-item__header">
+                <code class="method-item__sig mono">freeze_case(case_id: str)</code>
+                <span class="method-item__tag method-item__tag--owner">Owner Write</span>
+              </div>
+              <p class="method-item__desc">Locks a case in <code>DRAFT</code> state and transitions it to <code>FROZEN</code>. Enforces <code>_require_owner</code> so only the case owner can seal the evidence window prior to assessment.</p>
+            </article>
+
+            <article class="method-item">
+              <div class="method-item__header">
+                <code class="method-item__sig mono">assess(case_id: str)</code>
+                <span class="method-item__tag method-item__tag--public">Public Write</span>
+              </div>
+              <p class="method-item__desc">Public write method that triggers nondeterministic web fetching and independent validator re-derivation on a <code>FROZEN</code> case. Normalizes schedule rows, scales amounts to <code>u256</code>, analyzes differences according to precedence rules, and updates case outcome. If resolved, advances state to <code>ASSESSED</code>; if unresolved, remains <code>FROZEN</code>.</p>
+            </article>
+
+            <article class="method-item">
+              <div class="method-item__header">
+                <code class="method-item__sig mono">retry_unresolved(case_id: str)</code>
+                <span class="method-item__tag method-item__tag--public">Public Write</span>
+              </div>
+              <p class="method-item__desc">Public write method to re-attempt assessment on any case in <code>FROZEN</code> state with outcome <code>UNRESOLVED</code>. Increments <code>retry_count</code> up to <code>MAX_RETRIES = 3</code>; reverts once retry limit is reached.</p>
+            </article>
+
+            <article class="method-item">
+              <div class="method-item__header">
+                <code class="method-item__sig mono">get_case(case_id: str) -> str</code>
+                <span class="method-item__tag method-item__tag--view">Public View</span>
+              </div>
+              <p class="method-item__desc">Returns a serialized JSON representation of the complete case state, including owner, state, outcome, URLs, currency, scale, row counts, parsed rows, and evidence digests. Queried using <code>TransactionHashVariant.LATEST_FINAL</code>.</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- Section 8: Safety & Trust Architecture -->
+        <section class="doc-section" id="safety-trust" aria-labelledby="safety-title">
+          <div class="section-lead">
+            <p class="eyebrow">Security Model · Defense-in-Depth</p>
+            <h2 class="section-title" id="safety-title">Fail-closed state transitions, owner verification, and zero backend</h2>
+            <p class="section-desc">Architectural security boundaries protecting against injection, state corruption, unauthorized mutations, and false claims of success.</p>
+          </div>
+
+          <div class="features-grid three-col">
+            <div class="feature-card">
+              <h3 class="feature-title">Owner authorization on freeze</h3>
+              <p class="feature-text">Case creation records the sender as owner, and <code>freeze_case</code> strictly enforces <code>_require_owner</code> to seal the evidence window. Once frozen, consensus assessment and retry operations are publicly callable to avoid deadlocking verification.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Prompt & data boundary</h3>
+              <p class="feature-text">Fetched public fee schedules are processed purely as structured JSON data payloads. Raw web text is never concatenated into prompt templates or executed as code, neutralizing prompt injection vectors.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Fail-closed consensus</h3>
+              <p class="feature-text">When upstream data is missing, schema validation fails, or validators disagree, the contract refuses to register an arbitrary outcome. It defaults to <code>UNRESOLVED</code> and holds the state frozen.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Client preflight checks</h3>
+              <p class="feature-text">Before broadcasting transactions, the client verifies active wallet connection, ensures Studionet chain ID match, checks gas balance, and enforces a single active transaction lock.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Safe DOM text rendering</h3>
+              <p class="feature-text">Every dynamic case field, transaction hash, and error message is rendered strictly via <code>textContent</code> and programmatic DOM node insertion. Zero <code>innerHTML</code> injection exists in the codebase.</p>
+            </div>
+            <div class="feature-card">
+              <h3 class="feature-title">Zero backend footprint</h3>
+              <p class="feature-text">The web application is a pure client-side static bundle. It makes no intermediate API calls, runs no custodial servers, and connects directly to the configured Studionet RPC endpoint.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 9: Quickstart & Operational Support -->
+        <section class="doc-section" id="quickstart-support" aria-labelledby="support-title">
+          <div class="section-lead">
+            <p class="eyebrow">Operational Reference · Studionet Deployment</p>
+            <h2 class="section-title" id="support-title">Connecting, running locally, and verifying the deployed contract</h2>
+            <p class="section-desc">Quickstart instructions for interacting with the deployed intelligent contract on Studionet or running the test suite locally.</p>
+          </div>
+
+          <div class="support-grid">
+            <div class="support-card">
+              <h3 class="support-heading">Supported wallets</h3>
+              <p class="support-text">The interface supports browser wallets via EIP-6963 multi-provider discovery and standard window injection. Provider discovery examples include:</p>
+              <ul class="support-list">
+                <li><strong>MetaMask:</strong> EIP-6963 provider announcement and chain switching.</li>
+                <li><strong>OKX Wallet:</strong> Injected provider discovery and transaction signing.</li>
+                <li><strong>Rabby:</strong> EIP-6963 provider announcement and transaction signing.</li>
+              </ul>
+              <p class="field-hint">Provider availability and transaction signing depend on the installed browser wallet and user approval.</p>
+            </div>
+
+            <div class="support-card">
+              <h3 class="support-heading">Studionet deployment details</h3>
+              <ul class="support-meta-list">
+                <li>
+                  <span class="meta-label">Contract Address:</span>
+                  <a class="meta-link mono" href="https://explorer-studio.genlayer.com/address/0x5263Cd2311DB403F927C101018C12DcBAf41D8A0" target="_blank" rel="noreferrer">0x5263Cd2311DB403F927C101018C12DcBAf41D8A0</a>
+                </li>
+                <li>
+                  <span class="meta-label">Deployment Tx:</span>
+                  <a class="meta-link mono" href="https://explorer-studio.genlayer.com/tx/0xa9118a38de5d7700290c24dc3c2d9b7f4e5ea59168cc428b9e8c8c559986fabf" target="_blank" rel="noreferrer">0xa9118a38de5d7700290c24dc3c2d9b7f4e5ea59168cc428b9e8c8c559986fabf</a>
+                </li>
+                <li>
+                  <span class="meta-label">Contract SHA-256:</span>
+                  <span class="meta-val mono">8082AC55D11B62197E87652A4B3CA63C99D83201D33FAA6B1F8E43DDC62F75D1</span>
+                </li>
+                <li>
+                  <span class="meta-label">Studionet RPC:</span>
+                  <span class="meta-val mono">https://studio.genlayer.com/api</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="features-grid two-col">
+            <div class="feature-card">
+              <h3 class="feature-title">Local development & test commands</h3>
+              <div class="code-block">
+                <pre class="mono"><code># Run frontend unit tests
+npm test --prefix frontend
+
+# Start local frontend dev server
+npm run dev --prefix frontend
+
+# Build production bundle
+npm run build --prefix frontend
+
+# Run intelligent contract tests
+gltest tests/test_contract.py</code></pre>
+              </div>
+            </div>
+
+            <div class="feature-card">
+              <h3 class="feature-title">Operational boundaries & limitations</h3>
+              <ul class="support-list">
+                <li><strong>Max Rows:</strong> Schedules support up to 128 rows (<code>MAX_ROWS = 128</code>).</li>
+                <li><strong>Payload Bound:</strong> Upstream responses capped at 64 KB (<code>65536 bytes</code>).</li>
+                <li><strong>Public Endpoints:</strong> URLs must be publicly reachable without HTTP headers/cookies.</li>
+                <li><strong>Gas Currency:</strong> Transactions require Studionet testnet GEN from the faucet.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="resource-links">
+            <h3 class="resource-links__title">Official GenLayer developer resources</h3>
+            <div class="resource-links__grid">
+              <a class="resource-pill" href="https://docs.genlayer.com" target="_blank" rel="noreferrer">
+                <span>GenLayer Documentation</span>
+                <span class="resource-pill__arrow" aria-hidden="true">↗</span>
+              </a>
+              <a class="resource-pill" href="https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle" target="_blank" rel="noreferrer">
+                <span>Equivalence Principle</span>
+                <span class="resource-pill__arrow" aria-hidden="true">↗</span>
+              </a>
+              <a class="resource-pill" href="https://docs.genlayer.com/developers/intelligent-contracts/features/web-access" target="_blank" rel="noreferrer">
+                <span>Nondeterministic Web Access</span>
+                <span class="resource-pill__arrow" aria-hidden="true">↗</span>
+              </a>
+              <a class="resource-pill" href="https://docs.genlayer.com/api-references/genlayer-js" target="_blank" rel="noreferrer">
+                <span>genlayer-js Client SDK</span>
+                <span class="resource-pill__arrow" aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Proof Guarantees Summary Card -->
+        <section class="proof-card card" id="stage-proof" aria-labelledby="proof-title">
+          <div class="proof-content">
+            <p class="eyebrow">Proof guarantees</p>
+            <h2 id="proof-title">A result is not successful until the chain says so.</h2>
+            <p class="muted">The interface preserves the transaction hash, waits for GenLayer consensus finality, verifies semantic execution, and only then updates the authoritative case readback.</p>
+          </div>
+          <dl class="proof-list">
+            <div>
+              <dt>Source identity</dt>
+              <dd>HTTPS + frozen URLs</dd>
+            </div>
+            <div>
+              <dt>Numeric policy</dt>
+              <dd>String amounts → u256</dd>
+            </div>
+            <div>
+              <dt>Consensus</dt>
+              <dd>Independent row re-derivation</dd>
+            </div>
+          </dl>
+        </section>
       </main>
+
+      <!-- Ft2 Single-line inline rule footer -->
+      <footer class="foot-line">
+        <div class="foot-line__inner">
+          <p class="foot-line__text">
+            <span>© 2026 Fee Schedule Change Detector</span>
+            <span class="foot-line__sep" aria-hidden="true">·</span>
+            <a class="foot-link" href="https://fee-schedule-change-detector.vercel.app" target="_blank" rel="noreferrer">Live App</a>
+            <span class="foot-line__sep" aria-hidden="true">·</span>
+            <a class="foot-link" href="https://github.com/an8442780-debug/fee-schedule-change-detector" target="_blank" rel="noreferrer">GitHub Repository</a>
+            <span class="foot-line__sep" aria-hidden="true">·</span>
+            <a class="foot-link" href="https://explorer-studio.genlayer.com/address/0x5263Cd2311DB403F927C101018C12DcBAf41D8A0" target="_blank" rel="noreferrer">Studionet Explorer</a>
+            <span class="foot-line__sep" aria-hidden="true">·</span>
+            <a class="foot-link" href="https://github.com/an8442780-debug/fee-schedule-change-detector/blob/master/docs/VERIFICATION.md" target="_blank" rel="noreferrer">Verification Docs</a>
+            <span class="foot-line__sep" aria-hidden="true">·</span>
+            <span class="foot-line__mono">LATEST_FINAL Readback</span>
+          </p>
+        </div>
+      </footer>
     </div>
 
+    <!-- Wallet Dialog -->
     <dialog class="wallet-dialog" id="wallet-dialog" aria-labelledby="wallet-title">
-      <div class="dialog-header"><div><p class="eyebrow">Choose a provider</p><h2 id="wallet-title">Connect a supported wallet</h2></div><button class="icon-button" id="close-wallet" type="button" aria-label="Close wallet chooser">×</button></div>
-      <p class="muted">Opening this chooser does not request accounts. Choose a detected provider to continue.</p>
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-eyebrow">Provider selector</p>
+          <h2 id="wallet-title">Connect a supported wallet</h2>
+        </div>
+        <button class="icon-button" id="close-wallet" type="button" aria-label="Close wallet chooser">×</button>
+      </div>
+      <p class="dialog-description">Opening this chooser does not request accounts. Choose a detected provider to continue.</p>
       <div class="wallet-options" id="wallet-options"></div>
       <p class="dialog-error" id="wallet-error" role="alert" hidden></p>
     </dialog>
+
+    <!-- Global Toast -->
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- N13 Command/Jump Palette Modal -->
+    <div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Workflow stage and documentation navigator" aria-hidden="true" inert>
+      <div class="cmdk__backdrop" id="cmdk-backdrop"></div>
+      <div class="cmdk__panel" role="document">
+        <div class="cmdk__field">
+          <span class="cmdk__field-ico" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </span>
+          <input id="cmdk-input" type="text" placeholder="Jump to stage or documentation section…" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="cmdk-listbox" />
+          <button class="cmdk__esc" id="cmdk-esc-hint" type="button" aria-label="Close command palette"><kbd>esc</kbd></button>
+        </div>
+        <div class="cmdk__results" role="listbox" id="cmdk-listbox" aria-label="Workflow stages and documentation">
+          <p class="cmdk__group" role="presentation">Workflow stages</p>
+          <button class="cmdk__item is-active" type="button" role="option" aria-selected="true" data-target="stage-create">
+            <span class="cmdk__step">1.0</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Create case (Bind evidence)</span>
+              <span class="cmdk__item-desc">Declare sources A and B, currency code, and scale</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="stage-freeze">
+            <span class="cmdk__step">2.0</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Freeze schedules</span>
+              <span class="cmdk__item-desc">Lock evidence window and transition case from DRAFT to FROZEN</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="stage-assess">
+            <span class="cmdk__step">3.0</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Assess consensus</span>
+              <span class="cmdk__item-desc">Validators normalize rows and compare amounts (fail-closed)</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="stage-readback">
+            <span class="cmdk__step">4.0</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Authoritative readback</span>
+              <span class="cmdk__item-desc">Query get_case with TransactionHashVariant.LATEST_FINAL</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+
+          <p class="cmdk__group" role="presentation">Documentation & Architecture</p>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="verification-model">
+            <span class="cmdk__step">§1</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Verification model</span>
+              <span class="cmdk__item-desc">Leader normalization, validator re-derivation, consensus</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="evidence-reference">
+            <span class="cmdk__step">§2</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Evidence & outcome vocabulary</span>
+              <span class="cmdk__item-desc">The 8 contract outcomes: SAME, CHANGED, CONFLICT, UNRESOLVED…</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="numeric-policy">
+            <span class="cmdk__step">§3</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Data & numeric policy</span>
+              <span class="cmdk__item-desc">HTTPS bounds, canonical keys, string-to-u256 scaling</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="lifecycle-reference">
+            <span class="cmdk__step">§4</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Lifecycle reference</span>
+              <span class="cmdk__item-desc">DRAFT → FROZEN → ASSESSED, retry cap, recovery journal</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="method-reference">
+            <span class="cmdk__step">§5</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Contract method reference</span>
+              <span class="cmdk__item-desc">create_case, freeze_case, assess, retry_unresolved, get_case</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="safety-trust">
+            <span class="cmdk__step">§6</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Safety & trust boundaries</span>
+              <span class="cmdk__item-desc">Owner checks, prompt/data boundary, fail-closed mutation</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="quickstart-support">
+            <span class="cmdk__step">§7</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Quickstart & operational support</span>
+              <span class="cmdk__item-desc">Supported wallets, Studionet config, tests, local run</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+          <button class="cmdk__item" type="button" role="option" aria-selected="false" data-target="stage-proof">
+            <span class="cmdk__step">§8</span>
+            <span class="cmdk__item-main">
+              <span class="cmdk__item-title">Proof guarantees</span>
+              <span class="cmdk__item-desc">Source identity, numeric policy, and consensus invariants</span>
+            </span>
+            <kbd class="cmdk__item-key" aria-hidden="true">↵</kbd>
+          </button>
+        </div>
+        <div class="cmdk__foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+          <span><kbd>↵</kbd> jump</span>
+          <span><kbd>esc</kbd> close</span>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/app.js"></script>
   </body>
 </html>

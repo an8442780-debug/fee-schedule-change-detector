@@ -155,7 +155,9 @@ function renderWallets(options) {
         session = await connectWallet(option, invalidateSession);
         previous?.dispose?.();
         dialog.close();
-        shell.inert = false;
+        if (!cmdk || !cmdk.classList.contains("is-open")) {
+          shell.inert = false;
+        }
         $("connect-wallet").textContent = `Connected · ${session.account.slice(0, 6)}…${session.account.slice(-4)}`;
         showToast("Wallet connected to Studionet.");
         await reconcileExistingWrite();
@@ -205,15 +207,32 @@ async function reconcileExistingWrite() {
 }
 
 $("connect-wallet").addEventListener("click", () => {
+  if (cmdk && cmdk.classList.contains("is-open")) {
+    closeCmdk(false);
+  }
   walletError.hidden = true;
   renderWallets([]);
   dialog.showModal();
   shell.inert = true;
   if (!unsubscribeWallets) unsubscribeWallets = subscribeWallets(renderWallets);
 });
-$("close-wallet").addEventListener("click", () => { dialog.close(); shell.inert = false; });
-dialog.addEventListener("cancel", () => { shell.inert = false; });
-dialog.addEventListener("close", () => { shell.inert = false; $("connect-wallet").focus(); });
+$("close-wallet").addEventListener("click", () => {
+  dialog.close();
+  if (!cmdk || !cmdk.classList.contains("is-open")) {
+    shell.inert = false;
+  }
+});
+dialog.addEventListener("cancel", () => {
+  if (!cmdk || !cmdk.classList.contains("is-open")) {
+    shell.inert = false;
+  }
+});
+dialog.addEventListener("close", () => {
+  if (!cmdk || !cmdk.classList.contains("is-open")) {
+    shell.inert = false;
+  }
+  $("connect-wallet").focus();
+});
 dialog.addEventListener("keydown", (event) => {
   if (event.key !== "Tab") return;
   const focusable = [...dialog.querySelectorAll("button:not([disabled])")];
@@ -326,3 +345,248 @@ if (pendingWrite) {
   renderPending(resultPanel, { hash: pendingWrite.hash, status: "PENDING" });
   showToast("A previous transaction is awaiting reconciliation. Connect the same wallet to continue.", true);
 }
+
+/* --- N13 Command / Jump Palette Wiring --- */
+const cmdk = $("cmdk");
+const searchpill = $("searchpill");
+const cmdkBackdrop = $("cmdk-backdrop");
+const cmdkInput = $("cmdk-input");
+const cmdkListbox = $("cmdk-listbox");
+const cmdkItems = () => (cmdkListbox ? [...cmdkListbox.querySelectorAll(".cmdk__item:not([hidden])")] : []);
+
+function isDialogOpen() {
+  return Boolean(dialog && dialog.open);
+}
+
+function isCmdkOpen() {
+  return Boolean(cmdk && cmdk.classList.contains("is-open"));
+}
+
+function openCmdk() {
+  if (!cmdk || isDialogOpen()) return;
+  cmdk.inert = false;
+  cmdk.classList.add("is-open");
+  cmdk.setAttribute("aria-hidden", "false");
+  searchpill?.setAttribute("aria-expanded", "true");
+  shell.inert = true;
+  if (cmdkInput) {
+    cmdkInput.value = "";
+    filterCmdk("");
+    selectCmdkItem(0);
+    cmdkInput.focus();
+  }
+}
+
+function closeCmdk(restoreFocus = true) {
+  if (!cmdk || !cmdk.classList.contains("is-open")) return;
+  cmdk.classList.remove("is-open");
+  cmdk.setAttribute("aria-hidden", "true");
+  cmdk.inert = true;
+  searchpill?.setAttribute("aria-expanded", "false");
+  if (!isDialogOpen()) {
+    shell.inert = false;
+  }
+  if (restoreFocus && searchpill && !isDialogOpen()) {
+    searchpill.focus();
+  }
+}
+
+function selectCmdkItem(index) {
+  const items = cmdkItems();
+  if (!items.length) return;
+  const boundedIndex = Math.max(0, Math.min(index, items.length - 1));
+  items.forEach((item, idx) => {
+    const isSelected = idx === boundedIndex;
+    item.classList.toggle("is-active", isSelected);
+    item.setAttribute("aria-selected", isSelected ? "true" : "false");
+    if (isSelected) {
+      item.scrollIntoView({ block: "nearest" });
+    }
+  });
+}
+
+function getSelectedCmdkIndex() {
+  const items = cmdkItems();
+  return items.findIndex((item) => item.getAttribute("aria-selected") === "true");
+}
+
+function jumpToTarget(targetId) {
+  const target = $(targetId);
+  closeCmdk(false);
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  const focusable = target.querySelector("input, button, a, [tabindex]");
+  if (focusable) {
+    focusable.focus({ preventScroll: true });
+  } else {
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  }
+  updateTimelineNav(targetId);
+}
+
+function updateTimelineNav(targetId) {
+  const steps = document.querySelectorAll(".timeline-step");
+  steps.forEach((step) => {
+    const href = step.getAttribute("href") || "";
+    step.classList.toggle("is-active", href === `#${targetId}`);
+  });
+}
+
+function filterCmdk(query) {
+  if (!cmdkListbox) return;
+  const q = query.trim().toLowerCase();
+  const allItems = [...cmdkListbox.querySelectorAll(".cmdk__item")];
+  let hasMatches = false;
+
+  allItems.forEach((item) => {
+    const text = (item.textContent || "").toLowerCase();
+    const match = !q || text.includes(q);
+    item.hidden = !match;
+    if (match) hasMatches = true;
+  });
+
+  const groups = [...cmdkListbox.querySelectorAll(".cmdk__group")];
+  groups.forEach((group) => {
+    let next = group.nextElementSibling;
+    let groupHasVisible = false;
+    while (next && !next.classList.contains("cmdk__group")) {
+      if (next.classList.contains("cmdk__item") && !next.hidden) {
+        groupHasVisible = true;
+        break;
+      }
+      next = next.nextElementSibling;
+    }
+    group.hidden = !groupHasVisible;
+  });
+
+  let emptyMsg = cmdkListbox.querySelector(".cmdk__empty");
+  if (!hasMatches) {
+    if (!emptyMsg) {
+      emptyMsg = document.createElement("p");
+      emptyMsg.className = "cmdk__empty";
+      emptyMsg.textContent = "No matching stage or documentation section found.";
+      cmdkListbox.append(emptyMsg);
+    }
+    emptyMsg.hidden = false;
+  } else if (emptyMsg) {
+    emptyMsg.hidden = true;
+  }
+
+  const visible = cmdkItems();
+  if (visible.length > 0) {
+    const currentIndex = getSelectedCmdkIndex();
+    selectCmdkItem(currentIndex >= 0 ? currentIndex : 0);
+  }
+}
+
+if (searchpill) {
+  searchpill.addEventListener("click", () => {
+    if (isDialogOpen()) return;
+    openCmdk();
+  });
+}
+
+if (cmdkBackdrop) {
+  cmdkBackdrop.addEventListener("click", () => closeCmdk());
+}
+
+const escHint = $("cmdk-esc-hint");
+if (escHint) {
+  escHint.addEventListener("click", () => closeCmdk());
+}
+
+if (cmdkInput) {
+  cmdkInput.addEventListener("input", (e) => {
+    filterCmdk(e.target.value);
+  });
+}
+
+window.addEventListener("keydown", (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    if (isDialogOpen()) return;
+    if (isCmdkOpen()) {
+      closeCmdk();
+    } else {
+      openCmdk();
+    }
+    return;
+  }
+
+  if (!isCmdkOpen()) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeCmdk();
+    return;
+  }
+
+  const items = cmdkItems();
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    const currentIndex = getSelectedCmdkIndex();
+    const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+    selectCmdkItem(nextIndex);
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    const currentIndex = getSelectedCmdkIndex();
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+    selectCmdkItem(prevIndex);
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const currentIndex = getSelectedCmdkIndex();
+    if (currentIndex >= 0 && items[currentIndex]) {
+      const targetId = items[currentIndex].dataset.target;
+      if (targetId) jumpToTarget(targetId);
+    }
+    return;
+  }
+
+  if (event.key === "Tab") {
+    const focusable = [cmdkInput, escHint, ...items].filter(Boolean);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+});
+
+if (cmdkListbox) {
+  cmdkListbox.addEventListener("click", (event) => {
+    const item = event.target.closest(".cmdk__item");
+    if (!item) return;
+    const targetId = item.dataset.target;
+    if (targetId) jumpToTarget(targetId);
+  });
+}
+
+document.querySelectorAll(".timeline-step").forEach((step) => {
+  step.addEventListener("click", (event) => {
+    event.preventDefault();
+    const href = step.getAttribute("href");
+    if (!href || !href.startsWith("#")) return;
+    const targetId = href.slice(1);
+    jumpToTarget(targetId);
+  });
+});
+
+$("field-case-id")?.addEventListener("input", (e) => {
+  const actionCaseInput = $("action-case-id");
+  if (actionCaseInput && !actionCaseInput.value) {
+    actionCaseInput.placeholder = e.target.value || "2026-transport-fees";
+  }
+});
