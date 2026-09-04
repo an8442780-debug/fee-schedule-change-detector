@@ -10,3 +10,5 @@ frontend/dist/
 frontend/.env*
 __pycache__/
 .pytest_cache/
+.vercel/
+STAGE-*.md
