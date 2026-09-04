@@ -1723,6 +1723,15 @@ input[data-state="success"] {
   transform: translateY(1px);
 }
 
+.wallet-option--unavailable {
+  background-color: var(--color-paper);
+  border-style: dashed;
+}
+
+.wallet-option--unavailable:hover {
+  background-color: var(--color-paper-2);
+}
+
 .wallet-icon {
   display: flex;
   align-items: center;
@@ -1739,6 +1748,12 @@ input[data-state="success"] {
 
 .wallet-icon img {
   border-radius: var(--radius-sm);
+}
+
+.wallet-icon svg {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .wallet-option strong {

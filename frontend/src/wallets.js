@@ -18,8 +18,28 @@ window.addEventListener("eip6963:announceProvider", (event) => {
   if (registry.upsertAnnouncement(event.detail)) notify();
 });
 window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+function legacyCandidates() {
+  const providers = Array.isArray(window.ethereum?.providers) ? window.ethereum.providers : [];
+  const metamask = providers.find((provider) => provider?.isMetaMask && !provider?.isRabby)
+    ?? (window.ethereum?.isMetaMask && !window.ethereum?.isRabby ? window.ethereum : null);
+  const rabby = providers.find((provider) => provider?.isRabby)
+    ?? window.rabby
+    ?? null;
+  const okx = window.okxwallet?.ethereum ?? window.okxwallet ?? null;
+  return [
+    [metamask, "io.metamask"],
+    [okx, "com.okex.wallet"],
+    [rabby, "io.rabby"],
+  ];
+}
+
 setTimeout(() => {
-  if (registry.addLegacy(window.ethereum)) notify();
+  let changed = false;
+  for (const [provider, rdns] of legacyCandidates()) {
+    changed = registry.addLegacy(provider, rdns) || changed;
+  }
+  if (changed) notify();
 }, 300);
 
 export function subscribeWallets(listener) {

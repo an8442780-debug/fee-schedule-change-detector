@@ -1,6 +1,6 @@
 const SUPPORTED = new Map([
-  ["io.metamask", "MetaMask"],
   ["com.okex.wallet", "OKX Wallet"],
+  ["io.metamask", "MetaMask"],
   ["io.rabby", "Rabby"],
 ]);
 
@@ -14,6 +14,10 @@ export function formatWalletError(error) {
     return String(error.message ?? error.shortMessage ?? error.reason ?? error.error?.message ?? "Wallet connection could not be completed.");
   }
   return String(error ?? "Wallet connection could not be completed.");
+}
+
+export function supportedWallets() {
+  return [...SUPPORTED.entries()].map(([rdns, label]) => ({ rdns, label }));
 }
 
 export function createProviderRegistry() {
@@ -49,9 +53,9 @@ export function createProviderRegistry() {
       byProvider.set(provider, option);
       return true;
     },
-    addLegacy(provider) {
-      if (!validProvider(provider) || byUuid.size > 0) return false;
-      const option = { uuid: "legacy-injected", provider, rdns: "", label: "Detected wallet", icon: "", legacy: true };
+    addLegacy(provider, rdns) {
+      if (!validProvider(provider) || !SUPPORTED.has(rdns) || byProvider.has(provider)) return false;
+      const option = { uuid: `legacy-${rdns}`, provider, rdns, label: SUPPORTED.get(rdns), icon: "", legacy: true };
       byUuid.set(option.uuid, option);
       byProvider.set(provider, option);
       return true;
