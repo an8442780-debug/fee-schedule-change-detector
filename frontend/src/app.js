@@ -7,6 +7,7 @@ import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
   createdCaseReadbackMatches,
+  formatActionSuccess,
   formatRowEvidence,
   formatScaledAmount,
   rowCounts,
@@ -271,8 +272,9 @@ $("action-form").addEventListener("click", async (event) => {
     const before = await readCase(caseId);
     await validateWalletForWrite(session);
     const result = await executeWrite({ client: session.client, contractAddress: requireAddress(), functionName, args: [caseId], readback: async () => caseReadbackMatches(action, caseId, before, await readCase(caseId)), recoveryData: { action, caseId, before }, onUpdate: updateTransaction });
-    showToast(`${functionName} finalized and read back. ${explorerUrl(session.client, result.hash) ? "Explorer link is available in the transaction details." : ""}`);
-    appendTransactionDetails(result.hash, explorerUrl(session.client, result.hash));
+    const explorer = explorerUrl(session.client, result.hash);
+    showToast(formatActionSuccess(action, Boolean(explorer)));
+    appendTransactionDetails(result.hash, explorer);
   } catch (error) { showToast(classifyError(error), true); }
 });
 

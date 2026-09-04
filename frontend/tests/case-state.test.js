@@ -4,6 +4,7 @@ import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
   createdCaseReadbackMatches,
+  formatActionSuccess,
   formatRowEvidence,
   formatScaledAmount,
   rowCounts,
@@ -88,6 +89,18 @@ test("authoritative amounts and rows render without floating-point conversion", 
     currency: "USD",
     effective_date: "2026-01-01",
   }, 2), "BASE · day · 13.00 USD · effective 2026-01-01");
+});
+
+test("success toasts use user-facing labels for every action", () => {
+  const messages = ["freeze", "assess", "retry"].map((action) => formatActionSuccess(action, true));
+  assert.deepEqual(messages, [
+    "Freeze case finalized and read back. Explorer link is available in the transaction details.",
+    "Assess case finalized and read back. Explorer link is available in the transaction details.",
+    "Retry unresolved case finalized and read back. Explorer link is available in the transaction details.",
+  ]);
+  for (const message of messages) {
+    assert.doesNotMatch(message, /freeze_case|retry_unresolved/);
+  }
 });
 
 test("get_case read requests explicitly use the latest finalized variant", () => {

@@ -10,6 +10,12 @@ const RESOLVED_OUTCOMES = new Set([
   "ROW_REMOVED",
 ]);
 
+const ACTION_LABELS = Object.freeze({
+  freeze: "Freeze case",
+  assess: "Assess case",
+  retry: "Retry unresolved case",
+});
+
 function hasCaseIdentity(caseData, caseId) {
   return Boolean(caseData) && caseData.case_id === caseId;
 }
@@ -106,4 +112,9 @@ export function formatRowEvidence(row, scale) {
     `${formatScaledAmount(row.amount_scaled, scale)} ${String(row.currency ?? "UNKNOWN")}`,
     `effective ${String(row.effective_date ?? "UNKNOWN")}`,
   ].join(" · ");
+}
+
+export function formatActionSuccess(action, hasExplorerLink = false) {
+  const label = ACTION_LABELS[action] ?? "Case action";
+  return `${label} finalized and read back.${hasExplorerLink ? " Explorer link is available in the transaction details." : ""}`;
 }
