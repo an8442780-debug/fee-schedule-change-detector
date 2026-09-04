@@ -1,15 +1,35 @@
-const SUPPORTED = new Map([
-  ["com.okex.wallet", "OKX Wallet"],
-  ["io.metamask", "MetaMask"],
-  ["io.rabby", "Rabby"],
+const SUPPORTED = Object.freeze([
+  Object.freeze({ id: "okx", rdns: Object.freeze(["com.okex.wallet", "com.okx.wallet"]), label: "OKX Wallet", icon: "/wallets/okx.svg" }),
+  Object.freeze({ id: "metamask", rdns: Object.freeze(["io.metamask"]), label: "MetaMask", icon: "/wallets/metamask.svg" }),
+  Object.freeze({ id: "rabby", rdns: Object.freeze(["io.rabby"]), label: "Rabby", icon: "/wallets/rabby.svg" }),
 ]);
+
+const BY_RDNS = new Map(SUPPORTED.flatMap((wallet) => wallet.rdns.map((rdns) => [rdns, wallet])));
 
 function validProvider(provider) {
   return provider && typeof provider.request === "function";
 }
 
+function walletForRdns(rdns) {
+  return typeof rdns === "string" ? BY_RDNS.get(rdns.trim().toLowerCase()) : undefined;
+}
+
+function optionFor(wallet, provider, { legacy = false, uuid = "" } = {}) {
+  return {
+    uuid,
+    walletId: wallet.id,
+    provider,
+    rdns: wallet.rdns[0],
+    label: wallet.label,
+    icon: wallet.icon,
+    legacy,
+  };
+}
+
 export function walletDisplayState(options) {
-  const detected = Array.isArray(options) ? options.filter((option) => validProvider(option?.provider)) : [];
+  const detected = Array.isArray(options)
+    ? options.filter((option) => validProvider(option?.provider) && typeof option.label === "string" && typeof option.icon === "string")
+    : [];
   return {
     options: detected,
     emptyMessage: detected.length ? "" : "No supported wallet detected",
@@ -68,51 +88,53 @@ export function formatWalletError(error) {
 }
 
 export function supportedWallets() {
-  return [...SUPPORTED.entries()].map(([rdns, label]) => ({ rdns, label }));
+  return SUPPORTED.map((wallet) => ({ rdns: wallet.rdns[0], label: wallet.label, icon: wallet.icon }));
 }
 
 export function createProviderRegistry() {
+  const byWallet = new Map();
   const byUuid = new Map();
   const byProvider = new Map();
 
-  function removeLegacy() {
-    for (const [uuid, option] of byUuid) {
-      if (option.legacy) {
-        byUuid.delete(uuid);
-        byProvider.delete(option.provider);
-      }
-    }
+  function remove(option) {
+    if (!option) return;
+    byWallet.delete(option.walletId);
+    byUuid.delete(option.uuid);
+    byProvider.delete(option.provider);
+  }
+
+  function replace(option) {
+    remove(byWallet.get(option.walletId));
+    remove(byUuid.get(option.uuid));
+    const bound = byProvider.get(option.provider);
+    if (bound) remove(bound);
+    byWallet.set(option.walletId, option);
+    byUuid.set(option.uuid, option);
+    byProvider.set(option.provider, option);
   }
 
   return {
-    upsertAnnouncement(info) {
-      const provider = info?.provider;
-      const rdns = info?.rdns;
-      if (!validProvider(provider) || !SUPPORTED.has(rdns) || typeof info?.uuid !== "string") return false;
-      removeLegacy();
-      const previous = byUuid.get(info.uuid) ?? byProvider.get(provider);
-      if (previous && previous.uuid !== info.uuid) byUuid.delete(previous.uuid);
-      const option = {
-        uuid: info.uuid,
-        provider,
-        rdns,
-        label: SUPPORTED.get(rdns),
-        icon: typeof info.icon === "string" ? info.icon : "",
-        legacy: false,
-      };
-      byUuid.set(info.uuid, option);
-      byProvider.set(provider, option);
+    upsertAnnouncement(detail) {
+      const info = detail?.info;
+      const provider = detail?.provider;
+      const wallet = walletForRdns(info?.rdns);
+      if (!wallet || !validProvider(provider) || typeof info?.uuid !== "string" || !info.uuid.trim()) return false;
+      const sameUuid = byUuid.get(info.uuid);
+      if (sameUuid && sameUuid.provider !== provider) return false;
+      const bound = byProvider.get(provider);
+      if (bound && bound.walletId !== wallet.id) return false;
+      replace(optionFor(wallet, provider, { uuid: info.uuid.trim() }));
       return true;
     },
     addLegacy(provider, rdns) {
-      if (!validProvider(provider) || !SUPPORTED.has(rdns) || byProvider.has(provider)) return false;
-      const option = { uuid: `legacy-${rdns}`, provider, rdns, label: SUPPORTED.get(rdns), icon: "", legacy: true };
-      byUuid.set(option.uuid, option);
-      byProvider.set(provider, option);
+      const wallet = walletForRdns(rdns);
+      if (!wallet || !validProvider(provider) || byProvider.has(provider)) return false;
+      if (byWallet.has(wallet.id)) return false;
+      replace(optionFor(wallet, provider, { legacy: true, uuid: `legacy-${wallet.id}` }));
       return true;
     },
     list() {
-      return [...byUuid.values()];
+      return SUPPORTED.map((wallet) => byWallet.get(wallet.id)).filter(Boolean);
     },
   };
 }

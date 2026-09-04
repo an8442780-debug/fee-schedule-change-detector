@@ -4,46 +4,70 @@ import { chainIdNumber, createProviderRegistry, ensureProviderOnChain } from "./
 
 const registry = createProviderRegistry();
 const listeners = new Set();
+let discoveryStarted = false;
 
 function notify() {
-  for (const listener of listeners) listener(registry.list());
+  const options = registry.list();
+  for (const listener of listeners) listener(options);
 }
 
-window.addEventListener("eip6963:announceProvider", (event) => {
-  if (registry.upsertAnnouncement(event.detail)) notify();
-});
-window.dispatchEvent(new Event("eip6963:requestProvider"));
+function legacyWallet(provider) {
+  if (!provider || typeof provider.request !== "function") return "";
+  const matches = [
+    [provider.isMetaMask === true && provider.isRabby !== true, "io.metamask"],
+    [provider.isOkxWallet === true || provider.isOKExWallet === true, "com.okex.wallet"],
+    [provider.isRabby === true, "io.rabby"],
+  ].filter(([match]) => match).map(([, rdns]) => rdns);
+  return matches.length === 1 ? matches[0] : "";
+}
 
 function legacyCandidates() {
-  const providers = Array.isArray(window.ethereum?.providers) ? window.ethereum.providers : [];
-  const metamask = providers.find((provider) => provider?.isMetaMask && !provider?.isRabby)
-    ?? (window.ethereum?.isMetaMask && !window.ethereum?.isRabby ? window.ethereum : null);
-  const rabby = providers.find((provider) => provider?.isRabby)
-    ?? window.rabby
-    ?? null;
-  const okx = window.okxwallet?.ethereum ?? window.okxwallet ?? null;
+  const injected = window.ethereum;
+  const providers = Array.isArray(injected?.providers) ? injected.providers : [];
   return [
-    [metamask, "io.metamask"],
-    [okx, "com.okex.wallet"],
-    [rabby, "io.rabby"],
+    ...providers,
+    injected,
+    window.okxwallet?.ethereum ?? window.okxwallet,
+    window.rabby,
   ];
 }
 
-setTimeout(() => {
+function collectLegacy() {
   let changed = false;
-  for (const [provider, rdns] of legacyCandidates()) {
-    changed = registry.addLegacy(provider, rdns) || changed;
+  for (const provider of legacyCandidates()) {
+    const rdns = legacyWallet(provider);
+    if (rdns) changed = registry.addLegacy(provider, rdns) || changed;
   }
   if (changed) notify();
-}, 300);
+}
+
+export function startWalletDiscovery() {
+  if (discoveryStarted || typeof window === "undefined") return;
+  discoveryStarted = true;
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    if (registry.upsertAnnouncement(event.detail)) notify();
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  queueMicrotask(collectLegacy);
+  setTimeout(collectLegacy, 300);
+}
+
+startWalletDiscovery();
 
 export function subscribeWallets(listener) {
+  startWalletDiscovery();
   listeners.add(listener);
   listener(registry.list());
   return () => listeners.delete(listener);
 }
 
+export function getWalletsSnapshot() {
+  startWalletDiscovery();
+  return registry.list();
+}
+
 export async function connectWallet(option, onInvalidated = () => {}) {
+  if (!option?.provider || typeof option.provider.request !== "function") throw new Error("The selected wallet cannot be connected.");
   const accounts = await option.provider.request({ method: "eth_requestAccounts" });
   if (!Array.isArray(accounts) || typeof accounts[0] !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(accounts[0])) throw new Error("The wallet returned no valid account.");
   const account = accounts[0];

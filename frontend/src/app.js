@@ -1,6 +1,6 @@
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { connectWallet, subscribeWallets, validateWalletForWrite } from "./wallets.js";
+import { connectWallet, getWalletsSnapshot, subscribeWallets, validateWalletForWrite } from "./wallets.js";
 import { executeWrite, explorerUrl, readPending, reconcilePending } from "./transactions.js";
 import { formatWalletError, walletDisplayState } from "./wallets-core.js";
 import {
@@ -28,12 +28,6 @@ const walletOptions = $("wallet-options");
 const walletError = $("wallet-error");
 const toast = $("toast");
 const resultPanel = $("result-panel");
-
-const WALLET_ICON_MARKUP = Object.freeze({
-  "com.okex.wallet": '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="3" width="34" height="34" rx="9" fill="#111827"/><path fill="#fff" d="M10 10h8v8h-8zM22 10h8v8h-8zM10 22h8v8h-8zM22 22h8v8h-8z"/></svg>',
-  "io.metamask": '<svg viewBox="0 0 40 40" aria-hidden="true"><path fill="#e17726" d="M20 3 5 13l3 17 8 6 4-6 4 6 8-6 3-17L20 3Z"/><path fill="#f5841f" d="m20 3-8 13 8 5 8-5-8-13Z"/><path fill="#c0ad9e" d="m8 30 8 6 4-6-4-5-8 5Zm24 0-8 6-4-6 4-5 8 5Z"/><path fill="#763d16" d="m12 16 8 5-4 4-7-2 3-7Zm16 0-8 5 4 4 7-2-3-7Z"/></svg>',
-  "io.rabby": '<svg viewBox="0 0 40 40" aria-hidden="true"><path fill="#7185ff" d="M11 14c-1-6 1-10 4-11 3 2 4 6 4 10h2c0-4 1-8 4-10 3 1 5 5 4 11 3 2 5 5 5 9 0 7-6 12-15 12S5 30 5 23c0-4 2-7 6-9Z"/><circle cx="16" cy="23" r="2" fill="#fff"/><circle cx="26" cy="23" r="2" fill="#fff"/><path fill="#fff" d="M17 29c2 1 4 1 6 0-1 3-5 3-6 0Z"/></svg>',
-});
 
 function showToast(message, error = false) {
   toast.textContent = message;
@@ -147,15 +141,13 @@ function renderWallets(options) {
     const icon = document.createElement("span");
     icon.className = "wallet-icon";
     const iconUrl = typeof option.icon === "string" ? option.icon.trim() : "";
-    if (iconUrl.startsWith("https://") || iconUrl.startsWith("data:image/")) {
+    if (iconUrl.startsWith("/wallets/")) {
       const image = document.createElement("img");
       image.src = iconUrl;
       image.alt = "";
       image.width = 28;
       image.height = 28;
       icon.append(image);
-    } else if (WALLET_ICON_MARKUP[option.rdns]) {
-      icon.innerHTML = WALLET_ICON_MARKUP[option.rdns];
     }
     const details = document.createElement("span");
     const label = document.createElement("strong");
@@ -227,7 +219,7 @@ $("connect-wallet").addEventListener("click", () => {
     closeCmdk(false);
   }
   walletError.hidden = true;
-  renderWallets([]);
+  renderWallets(getWalletsSnapshot());
   dialog.showModal();
   shell.inert = true;
   if (!unsubscribeWallets) unsubscribeWallets = subscribeWallets(renderWallets);
