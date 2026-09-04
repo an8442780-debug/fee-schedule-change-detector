@@ -2,6 +2,7 @@ import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { connectWallet, subscribeWallets, validateWalletForWrite } from "./wallets.js";
 import { executeWrite, explorerUrl, readPending, reconcilePending } from "./transactions.js";
+import { formatWalletError } from "./wallets-core.js";
 import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
@@ -143,9 +144,9 @@ function renderWallets(options) {
     }
     const details = document.createElement("span");
     const label = document.createElement("strong");
-    label.textContent = String(option.label ?? "Injected wallet");
+    label.textContent = String(option.label ?? "Detected wallet");
     const kind = document.createElement("small");
-    kind.textContent = option.legacy ? "Browser wallet" : "Available wallet";
+    kind.textContent = option.legacy ? "Ready to connect" : "Available wallet";
     details.append(label, kind);
     button.append(icon, details);
     button.addEventListener("click", async () => {
@@ -173,7 +174,7 @@ function renderWallets(options) {
 }
 
 function classifyError(error) {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = formatWalletError(error);
   if (/user rejected|rejected|denied|4001/i.test(message)) return "Wallet request rejected. Choose a provider again when ready.";
   if (/chain|network/i.test(message)) return "The selected wallet could not switch to Studionet.";
   if (/429|rate limit|busy|timeout/i.test(message)) return "Studionet is temporarily unavailable. The original transaction hash, if any, remains available for reconciliation.";

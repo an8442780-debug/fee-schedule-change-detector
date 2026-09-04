@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createProviderRegistry } from "../src/wallets-core.js";
+import { createProviderRegistry, formatWalletError } from "../src/wallets-core.js";
 
 const provider = { request() {} };
 
@@ -16,7 +16,7 @@ test("legacy fallback is neutral and is replaced by the first supported announce
   const registry = createProviderRegistry();
   const legacy = { request() {} };
   assert.equal(registry.addLegacy(legacy), true);
-  assert.equal(registry.list()[0].label, "Injected wallet");
+  assert.equal(registry.list()[0].label, "Detected wallet");
   assert.equal(registry.upsertAnnouncement({ uuid: "rabby", rdns: "io.rabby", provider, icon: "icon" }), true);
   assert.deepEqual(registry.list().map((item) => item.label), ["Rabby"]);
   assert.equal(registry.list()[0].provider, provider);
@@ -27,4 +27,9 @@ test("unknown identities and invalid providers are ignored", () => {
   assert.equal(registry.upsertAnnouncement({ uuid: "unknown", rdns: "evil.wallet", provider }), false);
   assert.equal(registry.upsertAnnouncement({ uuid: "bad", rdns: "io.rabby", provider: {} }), false);
   assert.equal(registry.list().length, 0);
+});
+
+test("wallet errors expose a useful message instead of object coercion", () => {
+  assert.equal(formatWalletError({ message: "User rejected the request." }), "User rejected the request.");
+  assert.notEqual(formatWalletError({ code: 4001 }), "[object Object]");
 });

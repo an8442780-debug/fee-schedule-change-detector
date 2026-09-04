@@ -8,6 +8,14 @@ function validProvider(provider) {
   return provider && typeof provider.request === "function";
 }
 
+export function formatWalletError(error) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    return String(error.message ?? error.shortMessage ?? error.reason ?? error.error?.message ?? "Wallet connection could not be completed.");
+  }
+  return String(error ?? "Wallet connection could not be completed.");
+}
+
 export function createProviderRegistry() {
   const byUuid = new Map();
   const byProvider = new Map();
@@ -43,7 +51,7 @@ export function createProviderRegistry() {
     },
     addLegacy(provider) {
       if (!validProvider(provider) || byUuid.size > 0) return false;
-      const option = { uuid: "legacy-injected", provider, rdns: "", label: "Injected wallet", icon: "", legacy: true };
+      const option = { uuid: "legacy-injected", provider, rdns: "", label: "Detected wallet", icon: "", legacy: true };
       byUuid.set(option.uuid, option);
       byProvider.set(provider, option);
       return true;
