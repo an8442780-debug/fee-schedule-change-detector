@@ -31,6 +31,12 @@ export function createdCaseReadbackMatches(caseId, after) {
     && after.retry_count === 0;
 }
 
+export function createCaseInputError({ caseId, urlA, urlB } = {}) {
+  return [caseId, urlA, urlB].every((value) => String(value ?? "").trim())
+    ? ""
+    : "Enter a case ID and both source URLs before creating a case.";
+}
+
 export function caseReadbackMatches(action, caseId, before, after) {
   if (
     !hasCaseIdentity(before, caseId)

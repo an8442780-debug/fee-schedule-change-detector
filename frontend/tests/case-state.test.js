@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
+  createCaseInputError,
   createdCaseReadbackMatches,
   formatActionSuccess,
   formatRowEvidence,
@@ -30,6 +31,11 @@ test("created readback requires the intended draft case", () => {
     outcome: "SAME_SCHEDULE",
     retry_count: 0,
   }), false);
+});
+
+test("empty create input is rejected before any write", () => {
+  assert.equal(createCaseInputError({}), "Enter a case ID and both source URLs before creating a case.");
+  assert.equal(createCaseInputError({ caseId: "case-1", urlA: "https://a.example", urlB: "https://b.example" }), "");
 });
 
 test("freeze readback requires the state transition and preserves retry count", () => {

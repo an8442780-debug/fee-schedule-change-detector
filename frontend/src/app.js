@@ -6,6 +6,7 @@ import { formatWalletError, walletDisplayState } from "./wallets-core.js";
 import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
+  createCaseInputError,
   createdCaseReadbackMatches,
   formatActionSuccess,
   formatRowEvidence,
@@ -264,6 +265,8 @@ $("case-form").addEventListener("submit", async (event) => {
   const form = new FormData(event.currentTarget);
   const caseId = String(form.get("caseId")).trim();
   const args = [caseId, String(form.get("urlA")).trim(), String(form.get("urlB")).trim(), String(form.get("currency")).trim().toUpperCase(), Number(form.get("scale"))];
+  const inputError = createCaseInputError({ caseId, urlA: args[1], urlB: args[2] });
+  if (inputError) return showToast(inputError, true);
   try {
     await validateWalletForWrite(session);
     const result = await executeWrite({ client: session.client, contractAddress: requireAddress(), functionName: "create_case", args, readback: async () => createdCaseReadbackMatches(caseId, await readCase(caseId)), recoveryData: { action: "create", caseId }, onUpdate: updateTransaction });
