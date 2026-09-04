@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { executeWrite, readPending } from "../src/transactions.js";
+import { executeWrite, readPending, reconcilePending } from "../src/transactions.js";
 
 const HASH = "0x" + "a".repeat(64);
 const CONTRACT = "0x" + "b".repeat(40);
@@ -77,6 +77,29 @@ test("a pending journal blocks a second submission", async () => {
     /pending reconciliation/i,
   );
   assert.equal(submitted, false);
+  storage.clear();
+});
+
+test("a finalized execution failure releases the recovery lock after rollback", async () => {
+  storage.set("fee-schedule-change-detector:pending-write", JSON.stringify({
+    contractAddress: CONTRACT,
+    functionName: "create_case",
+    args: [""],
+    hash: HASH,
+  }));
+  await assert.rejects(
+    reconcilePending({
+      client: clientWith({
+        statusName: "FINALIZED",
+        result_name: "MAJORITY_AGREE",
+        consensus_data: { leader_receipt: [{ mode: "leader", execution_result: "ERROR", result: { status: "rollback" } }] },
+      }),
+      readback: async () => false,
+      onUpdate: () => {},
+    }),
+    /did not mutate contract state/i,
+  );
+  assert.equal(readPending(), null);
   storage.clear();
 });
 

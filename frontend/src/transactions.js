@@ -48,6 +48,14 @@ function assertSuccessfulTransaction(transaction) {
   if (execution !== ExecutionResult.FINISHED_WITH_RETURN) throw new Error("Contract execution failed: " + (execution || "UNKNOWN") + ".");
 }
 
+function isTerminalExecutionFailure(transaction) {
+  const status = String(transaction?.statusName ?? transaction?.status ?? "").toUpperCase();
+  const consensus = String(transaction?.resultName ?? transaction?.result_name ?? "").toUpperCase();
+  return status === TransactionStatus.FINALIZED
+    && consensus === TransactionResult.MAJORITY_AGREE
+    && executionName(transaction) !== ExecutionResult.FINISHED_WITH_RETURN;
+}
+
 export function readPending() {
   try {
     const value = localStorage.getItem(JOURNAL_KEY);
@@ -90,16 +98,25 @@ export async function reconcilePending({ client, readback, onUpdate }) {
   const pending = readPending();
   if (!pending) return null;
   volatileWrite = pending;
+  let releaseOnFailure = false;
   try {
     const transaction = await waitForFinality(client, pending.hash, onUpdate);
-    assertSuccessfulTransaction(transaction);
+    try {
+      assertSuccessfulTransaction(transaction);
+    } catch (error) {
+      if (!isTerminalExecutionFailure(transaction)) throw error;
+      try { localStorage.removeItem(JOURNAL_KEY); } catch { /* retain the hash in the rendered transaction panel */ }
+      volatileWrite = null;
+      releaseOnFailure = true;
+      throw new Error(`${error.message} The finalized transaction did not mutate contract state; its hash remains available above.`);
+    }
     const state = await readback(pending);
     if (!state) throw new Error("Finality succeeded but authoritative case readback did not confirm the write.");
     try { localStorage.removeItem(JOURNAL_KEY); } catch { throw new Error("Transaction reconciled, but recovery cleanup failed."); }
     volatileWrite = null;
     return { hash: pending.hash, transaction, state };
   } catch (error) {
-    volatileWrite = pending;
+    if (!releaseOnFailure) volatileWrite = pending;
     throw error;
   }
 }
