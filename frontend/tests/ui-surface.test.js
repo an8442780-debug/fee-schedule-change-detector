@@ -53,7 +53,6 @@ test("public page keeps IDs unique and local anchors resolvable", () => {
 });
 
 test("wallet chooser renders only discovered providers and uses a real empty state", () => {
-  assert.match(appSource, /option\?\.provider && typeof option\.provider\.request === "function"/);
-  assert.match(appSource, /No supported wallet detected/);
+  assert.match(appSource, /walletDisplayState\(options\)/);
   assert.doesNotMatch(appSource, /provider: null|unavailable-|Not detected in this browser/);
 });

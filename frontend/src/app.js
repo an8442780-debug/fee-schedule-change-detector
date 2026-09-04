@@ -2,7 +2,7 @@ import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { connectWallet, subscribeWallets, validateWalletForWrite } from "./wallets.js";
 import { executeWrite, explorerUrl, readPending, reconcilePending } from "./transactions.js";
-import { formatWalletError } from "./wallets-core.js";
+import { formatWalletError, walletDisplayState } from "./wallets-core.js";
 import {
   authoritativeCaseReadRequest,
   caseReadbackMatches,
@@ -125,12 +125,13 @@ function appendFact(list, label, value, className = "") {
 
 function renderWallets(options) {
   walletOptions.replaceChildren();
-  const displayOptions = options.filter((option) => option?.provider && typeof option.provider.request === "function");
+  const displayState = walletDisplayState(options);
+  const displayOptions = displayState.options;
   if (!displayOptions.length) {
     const empty = document.createElement("div");
     empty.className = "wallet-empty";
     const heading = document.createElement("strong");
-    heading.textContent = "No supported wallet detected";
+    heading.textContent = displayState.emptyMessage;
     const message = document.createElement("p");
     message.textContent = "Install or enable a supported browser wallet, then reload this page.";
     empty.append(heading, message);

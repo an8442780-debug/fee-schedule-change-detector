@@ -6,6 +6,7 @@ import {
   ensureProviderOnChain,
   formatWalletError,
   supportedWallets,
+  walletDisplayState,
 } from "../src/wallets-core.js";
 
 const provider = { request() {} };
@@ -48,6 +49,24 @@ test("supported wallet placeholders keep the complete canonical set", () => {
 test("wallet errors expose a useful message instead of object coercion", () => {
   assert.equal(formatWalletError({ message: "User rejected the request." }), "User rejected the request.");
   assert.notEqual(formatWalletError({ code: 4001 }), "[object Object]");
+});
+
+test("wallet display state renders only detected callable providers", () => {
+  const empty = walletDisplayState([]);
+  assert.equal(empty.options.length, 0);
+  assert.equal(empty.emptyMessage, "No supported wallet detected");
+
+  const okx = { uuid: "okx", provider, rdns: "com.okex.wallet", label: "OKX Wallet" };
+  const metamask = { uuid: "metamask", provider: { request() {} }, rdns: "io.metamask", label: "MetaMask" };
+  const one = walletDisplayState([okx]);
+  assert.equal(one.options.length, 1);
+  assert.equal(one.options[0], okx);
+  assert.equal(one.emptyMessage, "");
+
+  const multiple = walletDisplayState([okx, { uuid: "fake", provider: null }, { uuid: "invalid", provider: {} }, metamask]);
+  assert.deepEqual(multiple.options, [okx, metamask]);
+  assert.equal(multiple.options.length, 2);
+  assert.equal(multiple.emptyMessage, "");
 });
 
 const studioChain = {

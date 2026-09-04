@@ -8,6 +8,14 @@ function validProvider(provider) {
   return provider && typeof provider.request === "function";
 }
 
+export function walletDisplayState(options) {
+  const detected = Array.isArray(options) ? options.filter((option) => validProvider(option?.provider)) : [];
+  return {
+    options: detected,
+    emptyMessage: detected.length ? "" : "No supported wallet detected",
+  };
+}
+
 export function chainIdNumber(value) {
   if (typeof value === "string") return value.toLowerCase().startsWith("0x") ? Number.parseInt(value, 16) : Number(value);
   return Number(value);
